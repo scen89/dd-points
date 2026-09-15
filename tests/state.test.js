@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as S from '../js/state.js';
+import { validateState } from '../js/store.js';
 
 function memStorage() {
   const m = new Map();
@@ -195,4 +196,64 @@ test('importJson 失败不改动、成功则替换并持久化', () => {
   assert.equal(S.importJson(text).ok, true);
   assert.equal(S.getState().ledger.length, 1);
   assert.ok(storage.getItem('dengdeng_points_v1'));
+});
+
+test('undoRecord 未知 id 返回错误且不写入', () => {
+  const { storage, state } = freshState();
+  const before = state.updatedAt;
+  const res = S.undoRecord('nope');
+  assert.equal(res.ok, false);
+  assert.ok(res.error);
+  assert.equal(state.updatedAt, before);
+  assert.ok(storage.getItem('dengdeng_points_v1'));
+});
+
+test('undoRecord 成功后返回 saved 标志并持久化', () => {
+  const { storage, state } = freshState();
+  const cat = state.categories[0];
+  const { entry } = S.recordTask(cat.id, 'reward', cat.rewards[0].id, '2026-09-15');
+  const res = S.undoRecord(entry.id);
+  assert.equal(res.ok, true);
+  assert.equal(res.saved, true);
+  assert.equal(JSON.parse(storage.getItem('dengdeng_points_v1')).ledger.length, 0);
+});
+
+test('写入侧校验拒绝非法任务/商品/分类且状态仍合法', () => {
+  const { state } = freshState();
+  const c = S.addCategory('校验');
+  assert.equal(c.ok, true);
+  assert.equal(S.addTask(c.id, 'reward', { name: '坏任务', mode: 'normal', points: 0, levels: [] }).ok, false);
+  assert.equal(S.addTask(c.id, 'reward', { name: '', mode: 'normal', points: 5, levels: [] }).ok, false);
+  assert.equal(S.addTask(c.id, 'reward', { name: '坏分档', mode: 'level', points: 5, levels: [] }).ok, false);
+  assert.equal(S.addTask(c.id, 'reward', { name: '坏分档2', mode: 'level', points: 5, levels: [{ label: '档', points: 0 }] }).ok, false);
+  assert.equal(S.addTask(c.id, 'penalties', { name: '错 kind', mode: 'normal', points: 5, levels: [] }).ok, false);
+  assert.equal(S.addGoods({ name: '坏商品', points: 0, emoji: '🎁' }).ok, false);
+  assert.equal(S.addGoods({ name: '', points: 5, emoji: '🎁' }).ok, false);
+  assert.equal(S.addCategory('  ').ok, false);
+  const t = S.addTask(c.id, 'reward', { name: '好任务', mode: 'normal', points: 5, levels: [] });
+  assert.equal(t.ok, true);
+  assert.equal(S.updateTask(c.id, 'reward', t.id, { name: '坏改', mode: 'normal', points: -1, levels: [] }).ok, false);
+  assert.equal(validateState(state).ok, true);
+});
+
+test('recordTask 拒绝非法日期格式', () => {
+  const { state } = freshState();
+  const cat = state.categories[0];
+  assert.equal(S.recordTask(cat.id, 'reward', cat.rewards[0].id, '2026/09/15').ok, false);
+});
+
+test('importJson 保存失败时回滚且返回错误', () => {
+  const good = memStorage();
+  S.init(good);
+  const state = S.getState();
+  state.ledger.push({ id: 'z', type: 'in', points: 7, source: 'task', title: '导入用', date: '2026-09-15', ts: 3 });
+  const text = S.exportJson();
+
+  const failStorage = { getItem: () => null, setItem: () => { throw new Error('quota'); } };
+  S.init(failStorage);
+  const seedState = S.getState();
+  const res = S.importJson(text);
+  assert.equal(res.ok, false);
+  assert.ok(res.error);
+  assert.equal(S.getState(), seedState);
 });

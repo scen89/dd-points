@@ -103,8 +103,37 @@ function findList(cat, kind) {
   return kind === 'penalty' ? cat.penalties : cat.rewards;
 }
 
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function validKind(kind) {
+  return kind === 'reward' || kind === 'penalty';
+}
+
+function validTaskData(data) {
+  if (!data || typeof data.name !== 'string' || !data.name.trim()) return '任务名称不能为空';
+  if (data.mode !== 'normal' && data.mode !== 'level') return '任务类型非法';
+  if (!Number.isFinite(data.points) || !(data.points > 0)) return '任务分值必须为正数';
+  if (data.mode === 'level') {
+    if (!Array.isArray(data.levels) || !data.levels.length) return '分档任务至少需要一个档位';
+    for (const l of data.levels) {
+      if (!l || typeof l.label !== 'string' || !l.label.trim()) return '档位名称不能为空';
+      if (!Number.isFinite(l.points) || !(l.points > 0)) return '档位分值必须为正数';
+    }
+  }
+  return null;
+}
+
+function validGoodsData(data) {
+  if (!data || typeof data.name !== 'string' || !data.name.trim()) return '商品名称不能为空';
+  if (!Number.isFinite(data.points) || !(data.points > 0)) return '商品积分必须为正数';
+  if (typeof data.emoji !== 'string') return '商品图标非法';
+  return null;
+}
+
 export function recordTask(catId, kind, taskId, date, levelIdx = null) {
   const s = getState();
+  if (!validKind(kind)) return { ok: false, error: '任务类型非法' };
+  if (typeof date !== 'string' || !DATE_RE.test(date)) return { ok: false, error: '日期格式非法' };
   const cat = s.categories.find(c => c.id === catId);
   if (!cat) return { ok: false, error: '分类不存在' };
   const task = findList(cat, kind).find(t => t.id === taskId);
@@ -137,10 +166,10 @@ export function recordTask(catId, kind, taskId, date, levelIdx = null) {
 
 export function undoRecord(entryId) {
   const s = getState();
-  const before = s.ledger.length;
-  s.ledger = s.ledger.filter(r => r.id !== entryId);
-  persist();
-  return { ok: s.ledger.length < before };
+  const idx = s.ledger.findIndex(r => r.id === entryId);
+  if (idx < 0) return { ok: false, error: '记录不存在' };
+  s.ledger.splice(idx, 1);
+  return { ok: true, saved: persist().ok };
 }
 
 export function exchange(goodsId) {
@@ -163,6 +192,7 @@ export function exchange(goodsId) {
 }
 
 export function addCategory(name) {
+  if (typeof name !== 'string' || !name.trim()) return { ok: false, error: '分类名称不能为空' };
   const s = getState();
   const c = { id: uid(), name, rewards: [], penalties: [] };
   s.categories.push(c);
@@ -170,6 +200,7 @@ export function addCategory(name) {
 }
 
 export function renameCategory(id, name) {
+  if (typeof name !== 'string' || !name.trim()) return { ok: false, error: '分类名称不能为空' };
   const c = getState().categories.find(x => x.id === id);
   if (!c) return { ok: false, error: '分类不存在' };
   c.name = name;
@@ -183,23 +214,30 @@ export function removeCategory(id) {
 }
 
 export function addTask(catId, kind, data) {
+  if (!validKind(kind)) return { ok: false, error: '任务类型非法' };
   const cat = getState().categories.find(c => c.id === catId);
   if (!cat) return { ok: false, error: '分类不存在' };
+  const err = validTaskData(data);
+  if (err) return { ok: false, error: err };
   const task = { id: uid(), name: data.name, mode: data.mode, points: data.points, levels: data.levels || [] };
   findList(cat, kind).push(task);
   return { ok: true, id: task.id, saved: persist().ok };
 }
 
 export function updateTask(catId, kind, taskId, data) {
+  if (!validKind(kind)) return { ok: false, error: '任务类型非法' };
   const cat = getState().categories.find(c => c.id === catId);
   if (!cat) return { ok: false, error: '分类不存在' };
   const task = findList(cat, kind).find(t => t.id === taskId);
   if (!task) return { ok: false, error: '任务不存在' };
+  const err = validTaskData(data);
+  if (err) return { ok: false, error: err };
   Object.assign(task, { name: data.name, mode: data.mode, points: data.points, levels: data.levels || [] });
   return { ok: true, saved: persist().ok };
 }
 
 export function removeTask(catId, kind, taskId) {
+  if (!validKind(kind)) return { ok: false, error: '任务类型非法' };
   const cat = getState().categories.find(c => c.id === catId);
   if (!cat) return { ok: false, error: '分类不存在' };
   if (kind === 'penalty') cat.penalties = cat.penalties.filter(t => t.id !== taskId);
@@ -209,6 +247,8 @@ export function removeTask(catId, kind, taskId) {
 
 export function addGoods(data) {
   const s = getState();
+  const err = validGoodsData(data);
+  if (err) return { ok: false, error: err };
   const g = { id: uid(), name: data.name, points: data.points, emoji: data.emoji };
   s.goods.push(g);
   return { ok: true, id: g.id, saved: persist().ok };
@@ -217,6 +257,8 @@ export function addGoods(data) {
 export function updateGoods(id, data) {
   const g = getState().goods.find(x => x.id === id);
   if (!g) return { ok: false, error: '商品不存在' };
+  const err = validGoodsData(data);
+  if (err) return { ok: false, error: err };
   Object.assign(g, { name: data.name, points: data.points, emoji: data.emoji });
   return { ok: true, saved: persist().ok };
 }
@@ -240,6 +282,11 @@ export function exportJson() {
 export function importJson(text) {
   const res = parseImport(text);
   if (!res.ok) return res;
+  const prev = state;
   state = res.state;
-  return { ok: true, saved: persist().ok };
+  if (!persist().ok) {
+    state = prev;
+    return { ok: false, error: '本机保存失败，导入已取消' };
+  }
+  return { ok: true, saved: true };
 }
