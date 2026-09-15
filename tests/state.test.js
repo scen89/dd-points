@@ -76,3 +76,41 @@ test('totals 汇总收入/支出/打卡天数/条数', () => {
   assert.equal(t.checkinDays, 2);
   assert.equal(t.count, 3);
 });
+
+test('空账本的派生计算输出为零值', () => {
+  assert.equal(S.balance([]), 0);
+  assert.equal(S.dayNet([], '2026-09-15'), 0);
+  assert.equal(S.netSum([], ['2026-09-15']), 0);
+  const series = S.chartSeries([], 7, new Date(2026, 8, 15));
+  assert.equal(series.length, 7);
+  assert.ok(series.every(x => x.value === 0));
+  assert.deepEqual(S.groupByDate([]), { dates: [], byDate: {} });
+  assert.deepEqual(S.totals([]), { income: 0, spend: 0, checkinDays: 0, count: 0 });
+});
+
+test('totals 的打卡天数只统计打卡流水', () => {
+  const ledger = [
+    A('in', 10, '2026-09-15'),
+    { id: 'e1', type: 'out', points: 4, source: 'exchange', title: '兑换 · 测试', date: '2026-09-15', ts: 2 }
+  ];
+  const t = S.totals(ledger);
+  assert.equal(t.income, 10);
+  assert.equal(t.spend, 4);
+  assert.equal(t.count, 2);
+  assert.equal(t.checkinDays, 1);
+});
+
+test('负余额与负净得分', () => {
+  const ledger = [A('in', 3, '2026-09-15'), A('out', 10, '2026-09-15')];
+  assert.equal(S.balance(ledger), -7);
+  assert.equal(S.dayNet(ledger, '2026-09-15'), -7);
+  const series = S.chartSeries(ledger, 7, new Date(2026, 8, 15));
+  assert.equal(series[6].value, -7);
+});
+
+test('weekDates 跨年边界', () => {
+  const jan1 = new Date(2026, 0, 1); // 周四
+  assert.deepEqual(S.weekDates(0, jan1).map(S.ds), [
+    '2025-12-29', '2025-12-30', '2025-12-31', '2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04'
+  ]);
+});
