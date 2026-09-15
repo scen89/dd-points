@@ -91,7 +91,7 @@ test('空账本的派生计算输出为零值', () => {
 test('totals 的打卡天数只统计打卡流水', () => {
   const ledger = [
     A('in', 10, '2026-09-15'),
-    { id: 'e1', type: 'out', points: 4, source: 'exchange', title: '兑换 · 测试', date: '2026-09-15', ts: 2 }
+    { id: 'e1', type: 'out', points: 4, source: 'exchange', title: '兑换 · 测试', date: '2026-09-14', ts: 2 }
   ];
   const t = S.totals(ledger);
   assert.equal(t.income, 10);
