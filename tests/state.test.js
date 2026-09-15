@@ -257,3 +257,16 @@ test('importJson 保存失败时回滚且返回错误', () => {
   assert.ok(res.error);
   assert.equal(S.getState(), seedState);
 });
+
+test('写入侧校验拒绝带未知字段的档位', () => {
+  const { state } = freshState();
+  const c = S.addCategory('校验2');
+  const res = S.addTask(c.id, 'reward', {
+    name: '档位带脏字段',
+    mode: 'level',
+    points: 5,
+    levels: [{ label: 'a', points: 1, extra: true }]
+  });
+  assert.equal(res.ok, false);
+  assert.equal(validateState(state).ok, true);
+});

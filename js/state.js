@@ -109,14 +109,22 @@ function validKind(kind) {
   return kind === 'reward' || kind === 'penalty';
 }
 
+function hasOnlyKeys(o, allowed) {
+  return Object.keys(o).every(k => allowed.includes(k));
+}
+
 function validTaskData(data) {
-  if (!data || typeof data.name !== 'string' || !data.name.trim()) return '任务名称不能为空';
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return '任务数据非法';
+  if (!hasOnlyKeys(data, ['name', 'mode', 'points', 'levels'])) return '任务包含未知字段';
+  if (typeof data.name !== 'string' || !data.name.trim()) return '任务名称不能为空';
   if (data.mode !== 'normal' && data.mode !== 'level') return '任务类型非法';
   if (!Number.isFinite(data.points) || !(data.points > 0)) return '任务分值必须为正数';
   if (data.mode === 'level') {
     if (!Array.isArray(data.levels) || !data.levels.length) return '分档任务至少需要一个档位';
     for (const l of data.levels) {
-      if (!l || typeof l.label !== 'string' || !l.label.trim()) return '档位名称不能为空';
+      if (!l || typeof l !== 'object' || Array.isArray(l)) return '档位数据非法';
+      if (!hasOnlyKeys(l, ['label', 'points'])) return '档位包含未知字段';
+      if (typeof l.label !== 'string' || !l.label.trim()) return '档位名称不能为空';
       if (!Number.isFinite(l.points) || !(l.points > 0)) return '档位分值必须为正数';
     }
   }
@@ -124,7 +132,9 @@ function validTaskData(data) {
 }
 
 function validGoodsData(data) {
-  if (!data || typeof data.name !== 'string' || !data.name.trim()) return '商品名称不能为空';
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return '商品数据非法';
+  if (!hasOnlyKeys(data, ['name', 'points', 'emoji'])) return '商品包含未知字段';
+  if (typeof data.name !== 'string' || !data.name.trim()) return '商品名称不能为空';
   if (!Number.isFinite(data.points) || !(data.points > 0)) return '商品积分必须为正数';
   if (typeof data.emoji !== 'string') return '商品图标非法';
   return null;
