@@ -96,3 +96,150 @@ export function totals(ledger) {
   });
   return { income, spend, checkinDays: daySet.size, count: ledger.length };
 }
+
+/* ---------- 变更操作 ---------- */
+
+function findList(cat, kind) {
+  return kind === 'penalty' ? cat.penalties : cat.rewards;
+}
+
+export function recordTask(catId, kind, taskId, date, levelIdx = null) {
+  const s = getState();
+  const cat = s.categories.find(c => c.id === catId);
+  if (!cat) return { ok: false, error: '分类不存在' };
+  const task = findList(cat, kind).find(t => t.id === taskId);
+  if (!task) return { ok: false, error: '任务不存在' };
+  if (s.ledger.some(r => r.source === 'task' && r.date === date && r.taskId === taskId)) {
+    return { ok: false, error: '当天已经记过了，请先撤销' };
+  }
+  let points = task.points;
+  let title = task.name;
+  if (task.mode === 'level') {
+    const lv = task.levels[levelIdx];
+    if (!lv) return { ok: false, error: '档位不存在' };
+    points = lv.points;
+    title = task.name + ' · ' + lv.label;
+  }
+  const entry = {
+    id: uid(),
+    type: kind === 'penalty' ? 'out' : 'in',
+    points,
+    source: 'task',
+    taskId: task.id,
+    title,
+    category: cat.name,
+    date,
+    ts: Date.now()
+  };
+  s.ledger.push(entry);
+  return { ok: true, entry, saved: persist().ok };
+}
+
+export function undoRecord(entryId) {
+  const s = getState();
+  const before = s.ledger.length;
+  s.ledger = s.ledger.filter(r => r.id !== entryId);
+  persist();
+  return { ok: s.ledger.length < before };
+}
+
+export function exchange(goodsId) {
+  const s = getState();
+  const g = s.goods.find(x => x.id === goodsId);
+  if (!g) return { ok: false, error: '商品不存在' };
+  const bal = balance(s.ledger);
+  if (bal < g.points) return { ok: false, error: '积分不足' };
+  s.ledger.push({
+    id: uid(),
+    type: 'out',
+    points: g.points,
+    source: 'exchange',
+    title: '兑换 · ' + g.name,
+    category: '商城',
+    date: todayStr(),
+    ts: Date.now()
+  });
+  return { ok: true, saved: persist().ok };
+}
+
+export function addCategory(name) {
+  const s = getState();
+  const c = { id: uid(), name, rewards: [], penalties: [] };
+  s.categories.push(c);
+  return { ok: true, id: c.id, saved: persist().ok };
+}
+
+export function renameCategory(id, name) {
+  const c = getState().categories.find(x => x.id === id);
+  if (!c) return { ok: false, error: '分类不存在' };
+  c.name = name;
+  return { ok: true, saved: persist().ok };
+}
+
+export function removeCategory(id) {
+  const s = getState();
+  s.categories = s.categories.filter(x => x.id !== id);
+  return { ok: true, saved: persist().ok };
+}
+
+export function addTask(catId, kind, data) {
+  const cat = getState().categories.find(c => c.id === catId);
+  if (!cat) return { ok: false, error: '分类不存在' };
+  const task = { id: uid(), name: data.name, mode: data.mode, points: data.points, levels: data.levels || [] };
+  findList(cat, kind).push(task);
+  return { ok: true, id: task.id, saved: persist().ok };
+}
+
+export function updateTask(catId, kind, taskId, data) {
+  const cat = getState().categories.find(c => c.id === catId);
+  if (!cat) return { ok: false, error: '分类不存在' };
+  const task = findList(cat, kind).find(t => t.id === taskId);
+  if (!task) return { ok: false, error: '任务不存在' };
+  Object.assign(task, { name: data.name, mode: data.mode, points: data.points, levels: data.levels || [] });
+  return { ok: true, saved: persist().ok };
+}
+
+export function removeTask(catId, kind, taskId) {
+  const cat = getState().categories.find(c => c.id === catId);
+  if (!cat) return { ok: false, error: '分类不存在' };
+  if (kind === 'penalty') cat.penalties = cat.penalties.filter(t => t.id !== taskId);
+  else cat.rewards = cat.rewards.filter(t => t.id !== taskId);
+  return { ok: true, saved: persist().ok };
+}
+
+export function addGoods(data) {
+  const s = getState();
+  const g = { id: uid(), name: data.name, points: data.points, emoji: data.emoji };
+  s.goods.push(g);
+  return { ok: true, id: g.id, saved: persist().ok };
+}
+
+export function updateGoods(id, data) {
+  const g = getState().goods.find(x => x.id === id);
+  if (!g) return { ok: false, error: '商品不存在' };
+  Object.assign(g, { name: data.name, points: data.points, emoji: data.emoji });
+  return { ok: true, saved: persist().ok };
+}
+
+export function removeGoods(id) {
+  const s = getState();
+  s.goods = s.goods.filter(x => x.id !== id);
+  return { ok: true, saved: persist().ok };
+}
+
+export function clearLedger() {
+  const s = getState();
+  s.ledger = [];
+  return { ok: true, saved: persist().ok };
+}
+
+export function exportJson() {
+  return JSON.stringify(buildExport(getState()), null, 2);
+}
+
+export function importJson(text) {
+  const res = parseImport(text);
+  if (!res.ok) return res;
+  state = res.state;
+  return { ok: true, saved: persist().ok };
+}

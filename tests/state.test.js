@@ -114,3 +114,85 @@ test('weekDates 跨年边界', () => {
     '2025-12-29', '2025-12-30', '2025-12-31', '2026-01-01', '2026-01-02', '2026-01-03', '2026-01-04'
   ]);
 });
+
+test('recordTask 记分、防重复、惩罚为支出、分档取档位', () => {
+  const { state } = freshState();
+  const cat = state.categories[0];
+  const reward = cat.rewards.find(t => t.mode === 'normal');
+  const res = S.recordTask(cat.id, 'reward', reward.id, '2026-09-15');
+  assert.equal(res.ok, true);
+  assert.equal(res.entry.type, 'in');
+  assert.equal(res.entry.points, reward.points);
+  assert.equal(S.balance(state.ledger), reward.points);
+  assert.equal(S.recordTask(cat.id, 'reward', reward.id, '2026-09-15').ok, false);
+
+  const pen = cat.penalties[0];
+  const res2 = S.recordTask(cat.id, 'penalty', pen.id, '2026-09-15');
+  assert.equal(res2.entry.type, 'out');
+  assert.equal(res2.entry.points, pen.points);
+
+  const levelCat = state.categories.find(c => c.rewards.some(t => t.mode === 'level'));
+  const levelTask = levelCat.rewards.find(t => t.mode === 'level');
+  const res3 = S.recordTask(levelCat.id, 'reward', levelTask.id, '2026-09-15', 1);
+  assert.equal(res3.entry.points, levelTask.levels[1].points);
+  assert.ok(res3.entry.title.includes(levelTask.levels[1].label));
+  assert.equal(S.recordTask(levelCat.id, 'reward', levelTask.id, '2026-09-15', 99).ok, false);
+});
+
+test('undoRecord 撤销', () => {
+  const { state } = freshState();
+  const cat = state.categories[0];
+  const { entry } = S.recordTask(cat.id, 'reward', cat.rewards[0].id, '2026-09-15');
+  S.undoRecord(entry.id);
+  assert.equal(state.ledger.length, 0);
+});
+
+test('exchange 余额不足拒绝、足够则扣分', () => {
+  const { state } = freshState();
+  const g = state.goods[0];
+  assert.equal(S.exchange(g.id).ok, false);
+  state.ledger.push({ id: 'in1', type: 'in', points: 10000, source: 'task', title: '灌分', date: '2026-09-15', ts: 1 });
+  const res = S.exchange(g.id);
+  assert.equal(res.ok, true);
+  assert.equal(S.balance(state.ledger), 10000 - g.points);
+});
+
+test('分类/任务/商品 CRUD 与清空记录', () => {
+  const { state } = freshState();
+  const c = S.addCategory('测试分类');
+  assert.ok(state.categories.some(x => x.id === c.id));
+  S.renameCategory(c.id, '改名');
+  assert.equal(state.categories.find(x => x.id === c.id).name, '改名');
+  const t = S.addTask(c.id, 'reward', { name: '新任务', mode: 'normal', points: 3, levels: [] });
+  assert.equal(state.categories.find(x => x.id === c.id).rewards.length, 1);
+  S.updateTask(c.id, 'reward', t.id, { name: '改名任务', mode: 'normal', points: 5, levels: [] });
+  assert.equal(state.categories.find(x => x.id === c.id).rewards[0].points, 5);
+  S.removeTask(c.id, 'reward', t.id);
+  assert.equal(state.categories.find(x => x.id === c.id).rewards.length, 0);
+  S.removeCategory(c.id);
+  assert.equal(state.categories.some(x => x.id === c.id), false);
+
+  const g = S.addGoods({ name: '测试商品', points: 9, emoji: '🎈' });
+  S.updateGoods(g.id, { name: '改', points: 10, emoji: '🎁' });
+  assert.equal(state.goods.find(x => x.id === g.id).points, 10);
+  S.removeGoods(g.id);
+  assert.equal(state.goods.some(x => x.id === g.id), false);
+
+  S.recordTask(state.categories[0].id, 'reward', state.categories[0].rewards[0].id, '2026-09-15');
+  S.clearLedger();
+  assert.equal(state.ledger.length, 0);
+  assert.ok(state.categories.length > 0 && state.goods.length > 0);
+});
+
+test('importJson 失败不改动、成功则替换并持久化', () => {
+  const { storage, state } = freshState();
+  assert.equal(S.importJson('{"app":"other"}').ok, false);
+  assert.equal(S.getState().ledger.length, 0);
+
+  state.ledger.push({ id: 'z', type: 'in', points: 7, source: 'task', title: '导入用', date: '2026-09-15', ts: 3 });
+  const text = S.exportJson();
+  S.clearLedger();
+  assert.equal(S.importJson(text).ok, true);
+  assert.equal(S.getState().ledger.length, 1);
+  assert.ok(storage.getItem('dengdeng_points_v1'));
+});
