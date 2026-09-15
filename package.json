@@ -1,0 +1,11 @@
+{
+  "name": "dd-points",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "蹬蹬积分 - 儿童积分打卡 PWA",
+  "scripts": {
+    "dev": "node tools/dev-server.js",
+    "test": "node --test tests/"
+  }
+}
