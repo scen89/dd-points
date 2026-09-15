@@ -88,3 +88,34 @@ test('parseImport 拒绝非备份文件与非法结构', () => {
   payload.state.schemaVersion = 'x';
   assert.equal(parseImport(JSON.stringify(payload)).ok, false);
 });
+
+test('loadState 损坏数据回退种子前会保留原始备份', () => {
+  const raw = '{"schemaVersion":1,"categories":"bad"}';
+  const storage = memStorage({ [STORAGE_KEY]: raw });
+  const s = loadState(storage);
+  assert.equal(validateState(s).ok, true);
+  const backupKey = Object.keys(storage._dump()).find(k => k.startsWith(STORAGE_KEY + '_backup_'));
+  assert.ok(backupKey, '应存在备份键');
+  assert.equal(storage._dump()[backupKey], raw);
+});
+
+test('validateState 拒绝非法 id、未知字段与非有限数值', () => {
+  const s1 = createSeedState();
+  s1.categories[0].rewards[0].id = '"><img src=x onerror=alert(1)>';
+  assert.equal(validateState(s1).ok, false);
+
+  const s2 = createSeedState();
+  s2.categories[0].rewards[0].points = Infinity;
+  assert.equal(validateState(s2).ok, false);
+
+  const base = JSON.parse(JSON.stringify(createSeedState()));
+  base.extra = 1;
+  assert.equal(parseImport(JSON.stringify(buildExport(base))).ok, false);
+});
+
+test('parseImport 拒绝 __proto__ 注入且不污染原型', () => {
+  const evil = '{"app":"dengdeng-points","schemaVersion":1,"state":{"schemaVersion":1,"categories":[],"goods":[],"ledger":[],"__proto__":{"polluted":true}}}';
+  const res = parseImport(evil);
+  assert.equal(res.ok, false);
+  assert.equal({}.polluted, undefined);
+});

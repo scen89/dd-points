@@ -6,6 +6,6 @@
   "description": "蹬蹬积分 - 儿童积分打卡 PWA",
   "scripts": {
     "dev": "node tools/dev-server.js",
-    "test": "node --test tests/"
+    "test": "node --test"
   }
 }

@@ -1,6 +1,11 @@
 export const STORAGE_KEY = 'dengdeng_points_v1';
 export const SCHEMA_VERSION = 1;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
+
+function hasOnlyKeys(o, allowed) {
+  return Object.keys(o).every(k => allowed.includes(k));
+}
 
 export function uid() {
   return Math.random().toString(36).slice(2, 10);
@@ -116,15 +121,18 @@ function isPlainObject(v) {
 
 function validTask(t) {
   if (!isPlainObject(t)) return '任务不是对象';
-  if (typeof t.id !== 'string' || !t.id) return '任务缺少 id';
+  if (!hasOnlyKeys(t, ['id', 'name', 'mode', 'points', 'levels'])) return '任务包含未知字段';
+  if (typeof t.id !== 'string' || !ID_RE.test(t.id)) return '任务 id 非法';
   if (typeof t.name !== 'string' || !t.name) return '任务缺少名称';
   if (t.mode !== 'normal' && t.mode !== 'level') return '任务 mode 非法：' + t.mode;
-  if (typeof t.points !== 'number' || !(t.points > 0)) return '任务分值必须为正数';
+  if (!Number.isFinite(t.points) || !(t.points > 0)) return '任务分值必须为正数';
   if (t.mode === 'level') {
     if (!Array.isArray(t.levels) || !t.levels.length) return '分档任务缺少档位';
     for (const l of t.levels) {
-      if (!isPlainObject(l) || typeof l.label !== 'string' || !l.label) return '档位缺少名称';
-      if (typeof l.points !== 'number' || !(l.points > 0)) return '档位分值必须为正数';
+      if (!isPlainObject(l)) return '档位缺少名称';
+      if (!hasOnlyKeys(l, ['label', 'points'])) return '档位包含未知字段';
+      if (typeof l.label !== 'string' || !l.label) return '档位缺少名称';
+      if (!Number.isFinite(l.points) || !(l.points > 0)) return '档位分值必须为正数';
     }
   }
   return null;
@@ -132,11 +140,21 @@ function validTask(t) {
 
 export function validateState(s) {
   if (!isPlainObject(s)) return { ok: false, error: '数据不是对象' };
+  if (!hasOnlyKeys(s, ['schemaVersion', 'categories', 'goods', 'ledger', 'createdAt', 'updatedAt'])) {
+    return { ok: false, error: '数据包含未知字段' };
+  }
   if (s.schemaVersion !== SCHEMA_VERSION) return { ok: false, error: '数据版本不支持：' + s.schemaVersion };
+  for (const k of ['createdAt', 'updatedAt']) {
+    if (k in s && !Number.isFinite(s[k])) return { ok: false, error: k + ' 非法' };
+  }
   if (!Array.isArray(s.categories)) return { ok: false, error: '缺少 categories' };
   for (const c of s.categories) {
-    if (!isPlainObject(c) || typeof c.id !== 'string' || typeof c.name !== 'string') {
-      return { ok: false, error: '分类字段缺失' };
+    if (!isPlainObject(c)) return { ok: false, error: '分类字段缺失或非法' };
+    if (!hasOnlyKeys(c, ['id', 'name', 'rewards', 'penalties'])) {
+      return { ok: false, error: '分类包含未知字段' };
+    }
+    if (typeof c.id !== 'string' || !ID_RE.test(c.id) || typeof c.name !== 'string' || !c.name) {
+      return { ok: false, error: '分类字段缺失或非法' };
     }
     if (!Array.isArray(c.rewards) || !Array.isArray(c.penalties)) {
       return { ok: false, error: '分类缺少任务列表' };
@@ -148,34 +166,51 @@ export function validateState(s) {
   }
   if (!Array.isArray(s.goods)) return { ok: false, error: '缺少 goods' };
   for (const g of s.goods) {
-    if (!isPlainObject(g) || typeof g.id !== 'string' || typeof g.name !== 'string') {
-      return { ok: false, error: '商品字段缺失' };
+    if (!isPlainObject(g)) return { ok: false, error: '商品字段缺失或非法' };
+    if (!hasOnlyKeys(g, ['id', 'name', 'points', 'emoji'])) return { ok: false, error: '商品包含未知字段' };
+    if (typeof g.id !== 'string' || !ID_RE.test(g.id) || typeof g.name !== 'string' || !g.name) {
+      return { ok: false, error: '商品字段缺失或非法' };
     }
-    if (typeof g.points !== 'number' || !(g.points > 0)) return { ok: false, error: '商品分值必须为正数' };
+    if (!Number.isFinite(g.points) || !(g.points > 0)) return { ok: false, error: '商品分值必须为正数' };
     if (typeof g.emoji !== 'string') return { ok: false, error: '商品缺少 emoji 字段' };
   }
   if (!Array.isArray(s.ledger)) return { ok: false, error: '缺少 ledger' };
   for (const r of s.ledger) {
     if (!isPlainObject(r)) return { ok: false, error: '流水不是对象' };
-    if (typeof r.id !== 'string' || !r.id) return { ok: false, error: '流水缺少 id' };
+    if (!hasOnlyKeys(r, ['id', 'type', 'points', 'source', 'taskId', 'title', 'category', 'date', 'ts'])) {
+      return { ok: false, error: '流水包含未知字段' };
+    }
+    if (typeof r.id !== 'string' || !ID_RE.test(r.id)) return { ok: false, error: '流水 id 非法' };
     if (r.type !== 'in' && r.type !== 'out') return { ok: false, error: '流水 type 非法' };
-    if (typeof r.points !== 'number' || !(r.points > 0)) return { ok: false, error: '流水分值必须为正数' };
+    if (!Number.isFinite(r.points) || !(r.points > 0)) return { ok: false, error: '流水分值必须为正数' };
     if (r.source !== 'task' && r.source !== 'exchange') return { ok: false, error: '流水 source 非法' };
+    if (r.taskId !== undefined && (typeof r.taskId !== 'string' || !ID_RE.test(r.taskId))) {
+      return { ok: false, error: '流水 taskId 非法' };
+    }
     if (typeof r.title !== 'string' || !r.title) return { ok: false, error: '流水缺少标题' };
+    if (r.category !== undefined && typeof r.category !== 'string') {
+      return { ok: false, error: '流水 category 非法' };
+    }
     if (typeof r.date !== 'string' || !DATE_RE.test(r.date)) return { ok: false, error: '流水日期格式非法' };
-    if (typeof r.ts !== 'number') return { ok: false, error: '流水缺少时间戳' };
+    if (!Number.isFinite(r.ts)) return { ok: false, error: '流水缺少时间戳' };
   }
   return { ok: true };
 }
 
 export function loadState(storage = globalThis.localStorage) {
+  let raw = null;
   try {
-    const raw = storage.getItem(STORAGE_KEY);
+    raw = storage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
       if (validateState(parsed).ok) return parsed;
     }
   } catch (e) { /* 回退到种子数据 */ }
+  if (raw) {
+    try {
+      storage.setItem(STORAGE_KEY + '_backup_' + Date.now(), raw);
+    } catch (e) { /* 备份尽力而为 */ }
+  }
   const fresh = createSeedState();
   saveState(fresh, storage);
   return fresh;
