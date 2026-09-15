@@ -2337,3 +2337,25 @@ git push -u origin main
 - 打卡任务同日去重由 `recordTask` 保证，UI 已记任务点击走撤销路径
 - Service Worker 采用 stale-while-revalidate：离线可用，在线时后台静默更新
 - 图标用一次性 PowerShell 脚本生成，不引入任何 npm 依赖
+
+---
+
+## 执行修正记录（2026-09-15 执行期间）
+
+以下偏差已在执行中完成并通过测试，后续任务以本记录为准（与上文冲突处按本记录执行）：
+
+### Task 2 相关（提交 5237e2a）
+- `loadState` 在回退种子前，把无法解析/校验失败的原始字符串备份到 `STORAGE_KEY + '_backup_' + 时间戳`（尽力而为），避免静默丢数据
+- `validateState` 加固：id 必须匹配 `/^[A-Za-z0-9_-]{1,64}$/`；各对象仅允许已知字段（`hasOnlyKeys`）；数值字段必须 `Number.isFinite`；商品/分类名称非空；`__proto__` 等未知字段被拒绝
+- `package.json` 的 `test` 脚本改为裸 `node --test`（原 `node --test tests/` 在 Windows/Node 22 下报错）
+
+### Task 3/4 相关（提交 cecdddb、bbf7174、471f0a2、383279e）
+- 测试补充：空账本零值、负值、跨年周、totals 来源过滤、undoRecord 契约、写入侧校验、非法日期、导入回滚、档位未知字段
+- `undoRecord` 改为 findIndex/splice：未知 id 返回 `{ok:false, error:'记录不存在'}` 且不写盘；成功返回 `{ok:true, saved}`
+- 写入侧校验（`validKind` / `validTaskData` / `validGoodsData` + `DATE_RE`）：`recordTask` 校验 kind 与日期格式；`addTask/updateTask/addGoods/updateGoods` 校验名称/分值/mode/档位/未知字段；`addCategory/renameCategory` 名称非空
+- `importJson` 持久化失败时回滚内存状态并返回 `{ok:false, error:'本机保存失败，导入已取消'}`
+
+### Task 11 必须遵守的接口约定（替换计划中相应片段）
+- 所有变更操作调用后必须检查返回值：`res.ok === false` 时 toast 显示 `res.error` 且不显示成功；`res.saved === false` 时提示「已修改，但本机保存失败」
+- 分档任务保存时 `points` 必须取档位最大分值：`Math.max(...levels.map(l => l.points))`，不能依赖分值输入框的值
+- 导入完成后按 `res.ok` 判断结果，不再无条件 toast「导入成功」
