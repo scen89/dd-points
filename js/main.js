@@ -137,7 +137,7 @@ function levelPicker(catId, kind, taskId) {
         <button class="level-item" data-act="level-pick"
           data-cat="${catId}" data-kind="${kind}" data-id="${taskId}" data-idx="${i}">
           <span>${esc(l.label)}</span>
-          <b>${sign}${l.points} 分</b>
+          <b>${sign}${fmtPts(l.points)} 分</b>
         </button>`).join('')}
     </div>
     <div class="sheet-foot">
@@ -270,7 +270,7 @@ document.addEventListener('click', function (e) {
           const res = undoRecord(rec.id);
           if (!res.ok) { toast(res.error || '撤销失败'); render(); return; }
           render();
-          toast('已撤销');
+          toast(res.saved === false ? '已撤销，但本机保存失败' : '已撤销');
         },
         { danger: true, okText: '确认撤销' }
       );
