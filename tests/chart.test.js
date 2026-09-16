@@ -53,3 +53,15 @@ test('30 天时首尾标签不越界', () => {
   assert.ok(xs.length > 0);
   for (const x of xs) assert.ok(x >= 10 && x <= 290, 'x=' + x);
 });
+
+test('极大差值下极小值仍可见', () => {
+  const svg = barChartSVG([
+    { label: 'a', value: 1 },
+    { label: 'b', value: 100000 }
+  ], { width: 300, height: 150 });
+  const heights = [...svg.matchAll(/<rect x="[^"]*" y="[^"]*" width="[^"]*" height="([\d.]+)"/g)]
+    .map(m => Number(m[1]));
+  assert.equal(heights.length, 2);
+  assert.ok(heights[0] >= 0.5);
+  assert.ok(heights[1] > heights[0]);
+});

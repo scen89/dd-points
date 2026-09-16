@@ -19,7 +19,7 @@ export function barChartSVG(items, opts = {}) {
   items.forEach((d, i) => {
     const x = i * (bw + gap);
     const h = Math.abs(d.value) * scale;
-    if (h > 0.01) {
+    if (h > 0) {
       const hh = Math.max(0.5, h);
       const y = d.value > 0 ? base - hh : base;
       bars += `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1, bw - 1).toFixed(1)}" height="${hh.toFixed(1)}" rx="2" fill="${d.value > 0 ? posColor : negColor}"/>`;
