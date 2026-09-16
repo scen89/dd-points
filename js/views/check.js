@@ -23,7 +23,7 @@ export function viewCheck(route) {
   <div class="page">
     <div class="bal-card">
       <div class="bal-label">当前积分余额</div>
-      <div class="bal-num">${bal.toLocaleString()}<span>分</span></div>
+      <div class="bal-num">${fmtPts(bal).toLocaleString()}<span>分</span></div>
       <div class="bal-sub">今日 <b>${todaySum > 0 ? '+' : ''}${fmtPts(todaySum)}</b> · 本周 <b>${weekSum > 0 ? '+' : ''}${fmtPts(weekSum)}</b></div>
     </div>
 

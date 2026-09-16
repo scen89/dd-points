@@ -16,8 +16,8 @@ export function viewMe() {
     </div>
 
     <div class="stat-grid">
-      <div class="stat"><b class="plus">${income.toLocaleString()}</b><span>累计获得</span></div>
-      <div class="stat"><b class="minus">${spend.toLocaleString()}</b><span>累计消耗</span></div>
+      <div class="stat"><b class="plus">${fmtPts(income).toLocaleString()}</b><span>累计获得</span></div>
+      <div class="stat"><b class="minus">${fmtPts(spend).toLocaleString()}</b><span>累计消耗</span></div>
       <div class="stat"><b>${checkinDays}</b><span>打卡天数</span></div>
     </div>
 
