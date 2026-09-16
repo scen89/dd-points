@@ -30,3 +30,26 @@ test('30 天时标签按间隔抽样', () => {
   assert.ok(labels <= 8, '标签数量 ' + labels);
   assert.ok(labels >= 5);
 });
+
+test('负值柱从零轴向下、正负颜色区分', () => {
+  const svg = barChartSVG([
+    { label: '9/13', value: 4 },
+    { label: '9/14', value: -2 }
+  ], { width: 300, height: 150 });
+  const base = (150 - 18) / 2;
+  const rects = [...svg.matchAll(/<rect x="[^"]*" y="([\d.]+)" width="[^"]*" height="([\d.]+)" rx="2" fill="([^"]+)"/g)]
+    .map(m => ({ y: Number(m[1]), h: Number(m[2]), fill: m[3] }));
+  assert.equal(rects.length, 2);
+  assert.ok(rects[0].y + rects[0].h <= base + 0.01);
+  assert.ok(rects[1].y >= base - 0.01);
+  assert.ok(rects[1].y + rects[1].h > base);
+  assert.notEqual(rects[0].fill, rects[1].fill);
+});
+
+test('30 天时首尾标签不越界', () => {
+  const items = Array.from({ length: 30 }, (_, i) => ({ label: '10/' + (i + 1), value: i % 3 }));
+  const svg = barChartSVG(items, { width: 300, height: 150 });
+  const xs = [...svg.matchAll(/<text x="([\d.]+)"/g)].map(m => Number(m[1]));
+  assert.ok(xs.length > 0);
+  for (const x of xs) assert.ok(x >= 10 && x <= 290, 'x=' + x);
+});
