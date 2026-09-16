@@ -220,7 +220,7 @@ input,select,textarea{font-family:inherit;font-size:16px;}
   position:fixed;left:50%;top:38%;transform:translate(-50%,-50%) scale(.9);
   background:rgba(0,0,0,.82);color:#fff;padding:12px 22px;border-radius:12px;
   font-size:15px;font-weight:500;z-index:999;opacity:0;pointer-events:none;
-  transition:.22s;white-space:nowrap;backdrop-filter:blur(6px);
+  transition:.22s;white-space:normal;max-width:78vw;text-align:center;backdrop-filter:blur(6px);
 }
 #toast.show{opacity:1;transform:translate(-50%,-50%) scale(1);}
 /* ===== 趋势图 ===== */

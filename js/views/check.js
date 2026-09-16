@@ -69,10 +69,11 @@ export function viewCheck(route) {
       const rec = doneMap[t.id];
       const done = !!rec;
       const sign = kind === 'penalty' ? '-' : '+';
-      const maxPts = t.levels.length ? Math.max(...t.levels.map(l => l.points)) : t.points;
-      const ptsTxt = t.mode === 'level' ? sign + fmtPts(maxPts) + '起' : sign + fmtPts(t.points);
+      const lv = Array.isArray(t.levels) ? t.levels : [];
+      const maxPts = lv.length ? Math.max(...lv.map(l => l.points)) : t.points;
+      const ptsTxt = t.mode === 'level' ? '最高' + sign + fmtPts(maxPts) : sign + fmtPts(t.points);
       const sub = t.mode === 'level'
-        ? `<i>${t.levels.map(l => esc(l.label) + ' ' + fmtPts(l.points) + '分').join(' / ')}</i>`
+        ? `<i>${lv.map(l => esc(l.label) + ' ' + fmtPts(l.points) + '分').join(' / ')}</i>`
         : '';
       h += `<div class="task ${done ? 'done' : ''}" data-act="task"
               data-cat="${cat.id}" data-kind="${kind}" data-id="${t.id}">

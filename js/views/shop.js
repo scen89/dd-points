@@ -12,12 +12,12 @@ export function viewShop() {
   <div class="page">
     <div class="bal-card small">
       <div class="bal-label">可用积分</div>
-      <div class="bal-num">${bal.toLocaleString()}<span>分</span></div>
+      <div class="bal-num">${fmtPts(bal).toLocaleString()}<span>分</span></div>
     </div>
     <div class="grid">`;
 
   state.goods.forEach(g => {
-    const ok = bal >= g.points;
+    const ok = fmtPts(bal) >= fmtPts(g.points);
     h += `<div class="good ${ok ? '' : 'dis'}">
       <div class="g-emoji">${esc(g.emoji) || '🎁'}</div>
       <div class="g-name">${esc(g.name)}</div>

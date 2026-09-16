@@ -137,3 +137,15 @@ test('validateState 拒绝可疑档位名称', () => {
   levelTask.levels[0].label = '</textarea><img src=x onerror=1>';
   assert.equal(validateState(s).ok, false);
 });
+
+test('validateState 拒绝非数组档位与非法日历日期', () => {
+  const s1 = createSeedState();
+  s1.categories[0].rewards[0].levels = 'x';
+  assert.equal(validateState(s1).ok, false);
+  const s2 = createSeedState();
+  s2.categories[0].rewards[0].levels = null;
+  assert.equal(validateState(s2).ok, false);
+  const s3 = createSeedState();
+  s3.ledger.push({ id: 'c1', type: 'in', points: 1, source: 'task', title: 't', date: '2026-02-31', ts: 1 });
+  assert.equal(validateState(s3).ok, false);
+});

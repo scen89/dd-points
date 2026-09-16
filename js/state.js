@@ -117,6 +117,13 @@ function findList(cat, kind) {
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+function validDateStr(s) {
+  if (typeof s !== 'string' || !DATE_RE.test(s)) return false;
+  const [y, m, d] = s.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
+
 function validKind(kind) {
   return kind === 'reward' || kind === 'penalty';
 }
@@ -131,8 +138,9 @@ function validTaskData(data) {
   if (typeof data.name !== 'string' || !data.name.trim()) return '任务名称不能为空';
   if (data.mode !== 'normal' && data.mode !== 'level') return '任务类型非法';
   if (!Number.isFinite(data.points) || !(data.points > 0)) return '任务分值必须为正数';
+  if (!Array.isArray(data.levels)) return '任务缺少档位列表';
   if (data.mode === 'level') {
-    if (!Array.isArray(data.levels) || !data.levels.length) return '分档任务至少需要一个档位';
+    if (!data.levels.length) return '分档任务至少需要一个档位';
     for (const l of data.levels) {
       if (!l || typeof l !== 'object' || Array.isArray(l)) return '档位数据非法';
       if (!hasOnlyKeys(l, ['label', 'points'])) return '档位包含未知字段';
@@ -156,7 +164,7 @@ function validGoodsData(data) {
 export function recordTask(catId, kind, taskId, date, levelIdx = null) {
   const s = getState();
   if (!validKind(kind)) return { ok: false, error: '任务类型非法' };
-  if (typeof date !== 'string' || !DATE_RE.test(date)) return { ok: false, error: '日期格式非法' };
+  if (!validDateStr(date)) return { ok: false, error: '日期格式非法' };
   const cat = s.categories.find(c => c.id === catId);
   if (!cat) return { ok: false, error: '分类不存在' };
   const task = findList(cat, kind).find(t => t.id === taskId);

@@ -15,8 +15,14 @@ import { viewManage } from './views/manage.js';
 import { viewManageGoods } from './views/manage-goods.js';
 
 const route = { name: 'check', date: todayStr(), weekOffset: 0, seg: 'reward', chartDays: 7 };
+let lastToday = todayStr();
 
 function render() {
+  const t = todayStr();
+  if (t !== lastToday) {
+    if (route.date === lastToday) route.date = t;
+    lastToday = t;
+  }
   const views = {
     check: viewCheck, shop: viewShop, ledger: viewLedger,
     me: viewMe, manage: viewManage, manageGoods: viewManageGoods
@@ -158,7 +164,7 @@ function formGoods(id) {
       <label>商品名称</label>
       <input id="f-gname" value="${g ? esc(g.name) : ''}" placeholder="例如：游乐场">
       <label>所需积分</label>
-      <input id="f-gpts" type="number" inputmode="numeric" value="${g ? g.points : ''}" placeholder="例如：100">
+      <input id="f-gpts" type="number" inputmode="decimal" value="${g ? g.points : ''}" placeholder="例如：100">
       <label>图标 Emoji（可选）</label>
       <input id="f-gemoji" value="${g ? esc(g.emoji || '') : ''}" placeholder="🎁">
     </div>

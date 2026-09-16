@@ -1,4 +1,5 @@
 import { getState, balance, totals } from '../state.js';
+import { fmtPts } from '../util.js';
 
 export function viewMe() {
   const state = getState();
@@ -11,7 +12,7 @@ export function viewMe() {
   <div class="page">
     <div class="bal-card small">
       <div class="bal-label">当前余额</div>
-      <div class="bal-num">${bal.toLocaleString()}<span>分</span></div>
+      <div class="bal-num">${fmtPts(bal).toLocaleString()}<span>分</span></div>
     </div>
 
     <div class="stat-grid">

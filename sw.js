@@ -32,16 +32,17 @@ self.addEventListener('fetch', (e) => {
     const cache = await caches.open(CACHE);
     try {
       const res = await fetch(req);
-      if (res && res.ok) cache.put(req, res.clone()).catch(() => {});
-      return res;
-    } catch (err) {
-      const cached = await cache.match(req);
-      if (cached) return cached;
-      if (req.mode === 'navigate') {
-        const fallback = await cache.match('./index.html');
-        if (fallback) return fallback;
+      if (res && res.ok) {
+        cache.put(req, res.clone()).catch(() => {});
+        return res;
       }
-      return new Response('离线且无缓存', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+    } catch (err) { /* 离线或请求失败，走缓存回退 */ }
+    const cached = await cache.match(req);
+    if (cached) return cached;
+    if (req.mode === 'navigate') {
+      const fallback = await cache.match('./index.html');
+      if (fallback) return fallback;
     }
+    return new Response('离线且无缓存', { status: 503, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
   })());
 });

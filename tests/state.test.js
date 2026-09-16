@@ -302,3 +302,11 @@ test('存储不可用时 init 仍加载种子、变更报告 saved:false', () =>
   assert.equal(res.ok, true);
   assert.equal(res.saved, false);
 });
+
+test('写入侧校验拒绝非数组档位与非法日历日期', () => {
+  const { state } = freshState();
+  const c = S.addCategory('校验4');
+  assert.equal(S.addTask(c.id, 'reward', { name: '任务', mode: 'normal', points: 5, levels: 'x' }).ok, false);
+  assert.equal(S.recordTask(state.categories[0].id, 'reward', state.categories[0].rewards[0].id, '2026-02-31').ok, false);
+  assert.equal(validateState(state).ok, true);
+});

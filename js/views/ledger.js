@@ -12,7 +12,7 @@ export function viewLedger(route) {
   <div class="page">
     <div class="bal-card small">
       <div class="bal-label">当前余额</div>
-      <div class="bal-num">${balance(state.ledger).toLocaleString()}<span>分</span></div>
+      <div class="bal-num">${fmtPts(balance(state.ledger)).toLocaleString()}<span>分</span></div>
     </div>
 
     <div class="chart-card">

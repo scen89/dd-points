@@ -3,6 +3,13 @@ export const SCHEMA_VERSION = 1;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const ID_RE = /^[A-Za-z0-9_-]{1,64}$/;
 
+function validDate(s) {
+  if (typeof s !== 'string' || !DATE_RE.test(s)) return false;
+  const [y, m, d] = s.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
+
 function hasOnlyKeys(o, allowed) {
   return Object.keys(o).every(k => allowed.includes(k));
 }
@@ -126,8 +133,9 @@ function validTask(t) {
   if (typeof t.name !== 'string' || !t.name) return '任务缺少名称';
   if (t.mode !== 'normal' && t.mode !== 'level') return '任务 mode 非法：' + t.mode;
   if (!Number.isFinite(t.points) || !(t.points > 0)) return '任务分值必须为正数';
+  if (!Array.isArray(t.levels)) return '任务缺少档位列表';
   if (t.mode === 'level') {
-    if (!Array.isArray(t.levels) || !t.levels.length) return '分档任务缺少档位';
+    if (!t.levels.length) return '分档任务缺少档位';
     for (const l of t.levels) {
       if (!isPlainObject(l)) return '档位缺少名称';
       if (!hasOnlyKeys(l, ['label', 'points'])) return '档位包含未知字段';
@@ -194,7 +202,7 @@ export function validateState(s) {
     if (r.category !== undefined && typeof r.category !== 'string') {
       return { ok: false, error: '流水 category 非法' };
     }
-    if (typeof r.date !== 'string' || !DATE_RE.test(r.date)) return { ok: false, error: '流水日期格式非法' };
+    if (!validDate(r.date)) return { ok: false, error: '流水日期格式非法' };
     if (!Number.isFinite(r.ts)) return { ok: false, error: '流水缺少时间戳' };
   }
   return { ok: true };
@@ -211,6 +219,7 @@ export function loadState(storage = globalThis.localStorage) {
   } catch (e) { /* 回退到种子数据 */ }
   if (raw) {
     try {
+      console.warn('本地数据无法解析，已备份到 ' + STORAGE_KEY + '_backup_*');
       storage.setItem(STORAGE_KEY + '_backup_' + Date.now(), raw);
     } catch (e) { /* 备份尽力而为 */ }
   }
