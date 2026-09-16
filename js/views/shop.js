@@ -1,5 +1,5 @@
 import { getState, balance } from '../state.js';
-import { esc } from '../util.js';
+import { esc, fmtPts } from '../util.js';
 
 export function viewShop() {
   const state = getState();
@@ -19,12 +19,12 @@ export function viewShop() {
   state.goods.forEach(g => {
     const ok = bal >= g.points;
     h += `<div class="good ${ok ? '' : 'dis'}">
-      <div class="g-emoji">${g.emoji || '🎁'}</div>
+      <div class="g-emoji">${esc(g.emoji) || '🎁'}</div>
       <div class="g-name">${esc(g.name)}</div>
-      <div class="g-pts">${g.points} 分</div>
+      <div class="g-pts">${fmtPts(g.points)} 分</div>
       ${ok
         ? `<button class="btn primary sm" data-act="exchange" data-id="${g.id}">兑换</button>`
-        : `<button class="btn ghost sm" disabled>还差 ${g.points - bal}</button>`}
+        : `<button class="btn ghost sm" disabled>还差 ${fmtPts(g.points - bal)}</button>`}
     </div>`;
   });
 

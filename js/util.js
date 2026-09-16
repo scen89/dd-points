@@ -33,3 +33,7 @@ export function download(filename, text) {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 3000);
 }
+
+export function fmtPts(n) {
+  return Number(Number(n).toFixed(2));
+}

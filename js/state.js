@@ -47,7 +47,11 @@ export function weekDates(offset = 0, now = new Date()) {
 /* ---------- 派生计算 ---------- */
 
 export function balance(ledger) {
-  return ledger.reduce((s, r) => s + (r.type === 'in' ? r.points : -r.points), 0);
+  return sumNet(ledger);
+}
+
+export function sumNet(records) {
+  return records.reduce((s, r) => s + (r.type === 'in' ? r.points : -r.points), 0);
 }
 
 export function dayNet(ledger, date) {
@@ -136,7 +140,7 @@ function validGoodsData(data) {
   if (!hasOnlyKeys(data, ['name', 'points', 'emoji'])) return '商品包含未知字段';
   if (typeof data.name !== 'string' || !data.name.trim()) return '商品名称不能为空';
   if (!Number.isFinite(data.points) || !(data.points > 0)) return '商品积分必须为正数';
-  if (typeof data.emoji !== 'string') return '商品图标非法';
+  if (typeof data.emoji !== 'string' || data.emoji.length > 16 || /[&<>"']/.test(data.emoji)) return '商品图标非法';
   return null;
 }
 

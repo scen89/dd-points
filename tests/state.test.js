@@ -270,3 +270,16 @@ test('写入侧校验拒绝带未知字段的档位', () => {
   assert.equal(res.ok, false);
   assert.equal(validateState(state).ok, true);
 });
+
+test('sumNet 汇总任意记录集合', () => {
+  const recs = [A('in', 10, '2026-09-15'), A('out', 3, '2026-09-15')];
+  assert.equal(S.sumNet(recs), 7);
+  assert.equal(S.sumNet([]), 0);
+});
+
+test('写入侧校验拒绝可疑商品图标', () => {
+  const { state } = freshState();
+  assert.equal(S.addGoods({ name: '坏图标', points: 5, emoji: '<b>' }).ok, false);
+  assert.equal(S.addGoods({ name: '长图标', points: 5, emoji: 'x'.repeat(17) }).ok, false);
+  assert.equal(validateState(state).ok, true);
+});

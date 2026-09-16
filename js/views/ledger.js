@@ -1,6 +1,6 @@
-import { getState, balance, groupByDate, fmtDate, chartSeries } from '../state.js';
+import { getState, balance, groupByDate, fmtDate, chartSeries, sumNet } from '../state.js';
 import { barChartSVG } from '../chart.js';
-import { esc } from '../util.js';
+import { esc, fmtPts } from '../util.js';
 
 export function viewLedger(route) {
   const state = getState();
@@ -32,11 +32,11 @@ export function viewLedger(route) {
 
   dates.forEach(d => {
     const recs = byDate[d];
-    const sum = recs.reduce((s, r) => s + (r.type === 'in' ? r.points : -r.points), 0);
+    const sum = sumNet(recs);
     h += `<div class="day-group">
       <div class="day-head">
         <span>${fmtDate(d)}</span>
-        <b class="${sum >= 0 ? 'plus' : 'minus'}">${sum >= 0 ? '+' : ''}${sum}</b>
+        <b class="${sum >= 0 ? 'plus' : 'minus'}">${sum > 0 ? '+' : ''}${fmtPts(sum)}</b>
       </div>
       <div class="card">`;
     recs.forEach(r => {
@@ -45,7 +45,7 @@ export function viewLedger(route) {
         <div class="led-title">${isIn ? '➕' : '➖'} ${esc(r.title)}
           ${r.category ? `<span style="color:#9AA0A6;font-size:12px"> · ${esc(r.category)}</span>` : ''}
         </div>
-        <div class="led-pts ${isIn ? 'plus' : 'minus'}">${isIn ? '+' : '-'}${r.points}</div>
+        <div class="led-pts ${isIn ? 'plus' : 'minus'}">${isIn ? '+' : '-'}${fmtPts(r.points)}</div>
       </div>`;
     });
     h += `</div></div>`;

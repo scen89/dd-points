@@ -1,5 +1,5 @@
 import { getState } from '../state.js';
-import { esc } from '../util.js';
+import { esc, fmtPts } from '../util.js';
 
 export function viewManageGoods() {
   const state = getState();
@@ -15,8 +15,8 @@ export function viewManageGoods() {
 
   state.goods.forEach(g => {
     h += `<div class="m-row">
-      <div class="m-name">${g.emoji || '🎁'} ${esc(g.name)}</div>
-      <div class="m-pts plus">${g.points} 分</div>
+      <div class="m-name">${esc(g.emoji) || '🎁'} ${esc(g.name)}</div>
+      <div class="m-pts plus">${fmtPts(g.points)} 分</div>
       <button class="mini" data-act="goods-edit" data-id="${g.id}">编辑</button>
       <button class="mini danger" data-act="goods-del" data-id="${g.id}">删</button>
     </div>`;

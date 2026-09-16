@@ -1,5 +1,5 @@
 import { getState } from '../state.js';
-import { esc } from '../util.js';
+import { esc, fmtPts } from '../util.js';
 
 export function viewManage() {
   const state = getState();
@@ -37,8 +37,8 @@ export function viewManage() {
 function mRow(catId, kind, t) {
   const sign = kind === 'penalty' ? '-' : '+';
   const p = t.mode === 'level'
-    ? `分档 ${t.levels.map(l => l.points).join('/')}`
-    : sign + t.points;
+    ? `分档 ${t.levels.map(l => fmtPts(l.points)).join('/')}`
+    : sign + fmtPts(t.points);
   return `<div class="m-row">
     <div class="m-name">${esc(t.name)}</div>
     <div class="m-pts ${kind === 'penalty' ? 'minus' : 'plus'}">${p}</div>

@@ -1,5 +1,5 @@
-import { getState, weekDates, ds, todayStr, balance, netSum } from '../state.js';
-import { esc } from '../util.js';
+import { getState, weekDates, ds, todayStr, balance, netSum, sumNet } from '../state.js';
+import { esc, fmtPts } from '../util.js';
 
 export function viewCheck(route) {
   const state = getState();
@@ -24,11 +24,11 @@ export function viewCheck(route) {
     <div class="bal-card">
       <div class="bal-label">当前积分余额</div>
       <div class="bal-num">${bal.toLocaleString()}<span>分</span></div>
-      <div class="bal-sub">今日 <b>${todaySum >= 0 ? '+' : ''}${todaySum}</b> · 本周 <b>${weekSum >= 0 ? '+' : ''}${weekSum}</b></div>
+      <div class="bal-sub">今日 <b>${todaySum > 0 ? '+' : ''}${fmtPts(todaySum)}</b> · 本周 <b>${weekSum > 0 ? '+' : ''}${fmtPts(weekSum)}</b></div>
     </div>
 
     <div class="week">
-      <button class="wk-nav" data-act="wk" data-d="-1">‹</button>
+      <button class="wk-nav" data-act="wk" data-d="-1" aria-label="上一周">‹</button>
       <div class="wk-days">
         ${dates.map(dt => {
           const s = ds(dt);
@@ -40,7 +40,7 @@ export function viewCheck(route) {
           </button>`;
         }).join('')}
       </div>
-      <button class="wk-nav" data-act="wk" data-d="1">›</button>
+      <button class="wk-nav" data-act="wk" data-d="1" aria-label="下一周">›</button>
     </div>
 
     <div class="seg">
@@ -49,31 +49,30 @@ export function viewCheck(route) {
     </div>
   `;
 
+  let shown = 0;
   state.categories.forEach(cat => {
     const list = kind === 'reward' ? cat.rewards : cat.penalties;
     if (!list.length) return;
+    shown++;
 
-    const catSum = list.reduce((s, t) => {
-      const r = doneMap[t.id];
-      return s + (r ? (r.type === 'in' ? r.points : -r.points) : 0);
-    }, 0);
+    const catRecs = list.map(t => doneMap[t.id]).filter(Boolean);
+    const catSum = sumNet(catRecs);
 
     h += `<div class="card">
       <div class="cat-title ${kind === 'penalty' ? 'pen' : ''}">
         <i class="bar"></i>
         <span class="nm">${esc(cat.name)}</span>
-        ${catSum !== 0 ? `<span class="sm ${catSum > 0 ? 'plus' : 'minus'}">${catSum > 0 ? '+' : ''}${catSum}</span>` : ''}
+        ${catSum !== 0 ? `<span class="sm ${catSum > 0 ? 'plus' : 'minus'}">${catSum > 0 ? '+' : ''}${fmtPts(catSum)}</span>` : ''}
       </div>`;
 
     list.forEach(t => {
       const rec = doneMap[t.id];
       const done = !!rec;
       const sign = kind === 'penalty' ? '-' : '+';
-      const ptsTxt = t.mode === 'level'
-        ? sign + (t.levels[0] ? t.levels[0].points : 0) + '起'
-        : sign + t.points;
+      const maxPts = t.levels.length ? Math.max(...t.levels.map(l => l.points)) : t.points;
+      const ptsTxt = t.mode === 'level' ? sign + fmtPts(maxPts) + '起' : sign + fmtPts(t.points);
       const sub = t.mode === 'level'
-        ? `<i>${t.levels.map(l => esc(l.label) + ' ' + l.points + '分').join(' / ')}</i>`
+        ? `<i>${t.levels.map(l => esc(l.label) + ' ' + fmtPts(l.points) + '分').join(' / ')}</i>`
         : '';
       h += `<div class="task ${done ? 'done' : ''}" data-act="task"
               data-cat="${cat.id}" data-kind="${kind}" data-id="${t.id}">
@@ -84,6 +83,10 @@ export function viewCheck(route) {
     });
     h += `</div>`;
   });
+
+  if (state.categories.length && !shown) {
+    h += `<div class="empty big">暂无${kind === 'reward' ? '奖励' : '惩罚'}任务</div>`;
+  }
 
   if (!state.categories.length) {
     h += `<div class="empty big">还没有分类，去「⚙️ 任务管理」新建一个吧</div>`;

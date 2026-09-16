@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { esc } from '../js/util.js';
+import { esc, fmtPts } from '../js/util.js';
 
 test('esc 转义全部五个字符', () => {
   assert.equal(esc('&'), '&amp;');
@@ -21,4 +21,10 @@ test('esc 处理属性上下文注入', () => {
 test('esc 对非字符串输入不崩溃', () => {
   assert.equal(esc(42), '42');
   assert.equal(esc(null), 'null');
+});
+
+test('fmtPts 消除浮点尾差', () => {
+  assert.equal(fmtPts(0.1 + 0.2), 0.3);
+  assert.equal(fmtPts(3), 3);
+  assert.equal(fmtPts(-0.30000000000000004), -0.3);
 });

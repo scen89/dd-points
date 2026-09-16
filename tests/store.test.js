@@ -119,3 +119,12 @@ test('parseImport 拒绝 __proto__ 注入且不污染原型', () => {
   assert.equal(res.ok, false);
   assert.equal({}.polluted, undefined);
 });
+
+test('validateState 拒绝可疑商品图标', () => {
+  const s1 = createSeedState();
+  s1.goods[0].emoji = '<img src=x onerror=1>';
+  assert.equal(validateState(s1).ok, false);
+  const s2 = createSeedState();
+  s2.goods[0].emoji = 'x'.repeat(17);
+  assert.equal(validateState(s2).ok, false);
+});

@@ -128,7 +128,7 @@ input,select,textarea{font-family:inherit;font-size:16px;}
 .cat-card{padding:12px 14px 14px;}
 .cat-head{display:flex;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid var(--line);}
 .cat-name{flex:1;font-size:16px;font-weight:600;}
-.mini{font-size:13px;color:var(--blue);padding:5px 9px;border-radius:8px;background:var(--blue-l);}
+.mini{font-size:13px;color:var(--blue);padding:5px 9px;border-radius:8px;background:var(--blue-l);flex-shrink:0;white-space:nowrap;}
 .mini.danger{color:var(--red);background:var(--red-l);}
 .sub-title{font-size:13px;color:var(--t3);padding:12px 0 4px;font-weight:600;letter-spacing:.3px;}
 .sub-title span{color:var(--t3);font-weight:400;}

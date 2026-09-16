@@ -172,7 +172,9 @@ export function validateState(s) {
       return { ok: false, error: '商品字段缺失或非法' };
     }
     if (!Number.isFinite(g.points) || !(g.points > 0)) return { ok: false, error: '商品分值必须为正数' };
-    if (typeof g.emoji !== 'string') return { ok: false, error: '商品缺少 emoji 字段' };
+    if (typeof g.emoji !== 'string' || g.emoji.length > 16 || /[&<>"']/.test(g.emoji)) {
+      return { ok: false, error: '商品图标非法' };
+    }
   }
   if (!Array.isArray(s.ledger)) return { ok: false, error: '缺少 ledger' };
   for (const r of s.ledger) {
