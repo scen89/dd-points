@@ -32,13 +32,13 @@ dd-points/
 
 ## 本地开发
 
-需要 Node 22（仅用于开发服务器和测试，应用本身零依赖）。
+需要 Node 20 及以上（开发环境使用 Node 22）。Node 仅用于本地开发服务器和测试，应用本身零依赖。
 
 ```powershell
 npm run dev
 ```
 
-浏览器访问 http://localhost:8080 。在本地环境下 Service Worker 可正常工作，可以完整验证离线缓存与安装行为。
+浏览器访问 http://localhost:8080 。在本地环境下 Service Worker 可正常工作，可以验证离线缓存、可安装性与刷新更新；Android 上的真实安装与离线体验请按文末验收清单确认。
 
 ## 测试
 
@@ -50,16 +50,17 @@ npm test
 
 ## 部署到 GitHub Pages
 
-1. 在 GitHub 创建 **public** 仓库 `dd-points`。
-2. 在项目目录添加远程仓库并推送：
+1. 在 GitHub 创建 **public** 仓库 `dd-points`（若创建时勾选了初始化 README，可先 `git pull --rebase origin main` 再推送，或直接创建空仓库）。
+2. 确认当前分支的代码就是要上线的版本；若在特性分支上开发，先合并回 `main`（例如 `git switch main` 然后 `git merge <分支名>`）。
+3. 在项目目录添加远程仓库并推送：
 
    ```powershell
    git remote add origin https://github.com/<用户名>/dd-points.git
    git push -u origin main
    ```
 
-3. 打开仓库 Settings → Pages，Source 选择 `Deploy from a branch`，分支选 `main`、目录选 `/ (root)`，保存。
-4. 等待 1–2 分钟后访问 `https://<用户名>.github.io/dd-points/` 。
+4. 打开仓库 Settings → Pages，Source 选择 `Deploy from a branch`，分支选 `main`、目录选 `/ (root)`，保存。
+5. 等待几分钟（首次构建可能更久）后访问 `https://<用户名>.github.io/dd-points/` 。
 
 ## 手机安装
 
@@ -67,15 +68,21 @@ Android Chrome 打开 `https://<用户名>.github.io/dd-points/` → 右上角�
 
 ## 更新流程
 
-1. 修改代码并在本地验证。
-2. `git push` 推送到 GitHub。
-3. 手机在**联网状态**下再次打开应用时自动更新：Service Worker 在线优先获取新版本并更新缓存，离线时继续使用本地缓存，离线功能不受影响。若打开时仍是旧版本，关闭页面重新打开即可。
+1. 修改代码并在本地提交、验证。
+2. 合并到 `main` 后推送到 GitHub：
+
+   ```powershell
+   git push origin main
+   ```
+
+3. 手机在**联网状态**下再次打开应用时自动更新：Service Worker 在线优先获取新版本并更新缓存，离线时继续使用本地缓存，离线功能不受影响。若打开时仍是旧版本，稍等几分钟后重新打开（GitHub Pages 本身也有短暂缓存）。
 
 ## 数据说明
 
 - 数据保存在手机本机浏览器中，不会上传到任何服务器。
 - 换手机或误删数据时，用「我的 → 导出数据备份」保存 JSON 文件，再在目标设备用「导入备份恢复」选择该文件。
 - 导入会覆盖现有全部分类、商品和流水记录，导入前请先导出当前数据。
+- 「清空所有记录」只删除流水，分类与商品保留，操作不可恢复，建议先导出备份。
 - 建议定期导出备份，并将文件另存到手机或网盘。
 
 ## 验收清单
