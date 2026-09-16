@@ -128,3 +128,12 @@ test('validateState 拒绝可疑商品图标', () => {
   s2.goods[0].emoji = 'x'.repeat(17);
   assert.equal(validateState(s2).ok, false);
 });
+
+test('validateState 拒绝可疑档位名称', () => {
+  const s = createSeedState();
+  const levelTask = s.categories
+    .flatMap(c => [...c.rewards, ...c.penalties])
+    .find(t => t.mode === 'level');
+  levelTask.levels[0].label = '</textarea><img src=x onerror=1>';
+  assert.equal(validateState(s).ok, false);
+});

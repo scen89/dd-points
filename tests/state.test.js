@@ -283,3 +283,22 @@ test('写入侧校验拒绝可疑商品图标', () => {
   assert.equal(S.addGoods({ name: '长图标', points: 5, emoji: 'x'.repeat(17) }).ok, false);
   assert.equal(validateState(state).ok, true);
 });
+
+test('写入侧校验拒绝可疑档位名称', () => {
+  const { state } = freshState();
+  const c = S.addCategory('校验3');
+  const res = S.addTask(c.id, 'reward', {
+    name: '任务', mode: 'level', points: 5,
+    levels: [{ label: '</textarea><img>', points: 1 }]
+  });
+  assert.equal(res.ok, false);
+  assert.equal(validateState(state).ok, true);
+});
+
+test('存储不可用时 init 仍加载种子、变更报告 saved:false', () => {
+  S.init(null);
+  assert.equal(validateState(S.getState()).ok, true);
+  const res = S.addCategory('无存储');
+  assert.equal(res.ok, true);
+  assert.equal(res.saved, false);
+});

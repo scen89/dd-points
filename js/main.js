@@ -88,10 +88,11 @@ function formCat(id) {
 function formTask(catId, kind, taskId) {
   const state = getState();
   const cat = state.categories.find(c => c.id === catId);
+  if (!cat) return;
   const list = kind === 'penalty' ? cat.penalties : cat.rewards;
   const t = taskId ? list.find(x => x.id === taskId) : null;
   const isLevel = !!(t && t.mode === 'level');
-  const lv = isLevel ? t.levels.map(l => `${l.label},${l.points}`).join('\n') : '';
+  const lv = isLevel ? t.levels.map(l => `${esc(l.label)},${l.points}`).join('\n') : '';
   const kindName = kind === 'penalty' ? '惩罚' : '奖励';
 
   openModal(`
@@ -126,8 +127,10 @@ function formTask(catId, kind, taskId) {
 function levelPicker(catId, kind, taskId) {
   const state = getState();
   const cat = state.categories.find(c => c.id === catId);
+  if (!cat) return;
   const list = kind === 'penalty' ? cat.penalties : cat.rewards;
   const t = list.find(x => x.id === taskId);
+  if (!t) return;
   const sign = kind === 'penalty' ? '-' : '+';
 
   openModal(`
@@ -190,7 +193,7 @@ function startImport() {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const text = String(reader.result || '');
+      const text = String(reader.result || '').replace(/^\uFEFF/, '');
       confirmModal(
         '导入备份',
         '导入会覆盖当前所有分类、商品和流水记录，确定继续？',
@@ -203,6 +206,7 @@ function startImport() {
         { danger: true, okText: '确认导入' }
       );
     };
+    reader.onerror = () => toast('读取文件失败');
     reader.readAsText(file);
   };
   input.click();
@@ -429,7 +433,7 @@ document.addEventListener('click', function (e) {
   if (act === 'goods-save') {
     const id = el.dataset.id;
     const name = document.getElementById('f-gname').value.trim();
-    const pts = Math.abs(parseInt(document.getElementById('f-gpts').value, 10) || 0);
+    const pts = Math.abs(parseFloat(document.getElementById('f-gpts').value) || 0);
     const emoji = document.getElementById('f-gemoji').value.trim() || '🎁';
     if (!name) return toast('请输入商品名称');
     if (!pts) return toast('请输入所需积分');

@@ -132,6 +132,7 @@ function validTask(t) {
       if (!isPlainObject(l)) return '档位缺少名称';
       if (!hasOnlyKeys(l, ['label', 'points'])) return '档位包含未知字段';
       if (typeof l.label !== 'string' || !l.label) return '档位缺少名称';
+      if (/[&<>"']/.test(l.label)) return '档位名称包含非法字符';
       if (!Number.isFinite(l.points) || !(l.points > 0)) return '档位分值必须为正数';
     }
   }
