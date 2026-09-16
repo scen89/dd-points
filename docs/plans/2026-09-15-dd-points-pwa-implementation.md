@@ -2359,3 +2359,22 @@ git push -u origin main
 - 所有变更操作调用后必须检查返回值：`res.ok === false` 时 toast 显示 `res.error` 且不显示成功；`res.saved === false` 时提示「已修改，但本机保存失败」
 - 分档任务保存时 `points` 必须取档位最大分值：`Math.max(...levels.map(l => l.points))`，不能依赖分值输入框的值
 - 导入完成后按 `res.ok` 判断结果，不再无条件 toast「导入成功」
+
+### 视图与数据加固（提交 d392b2b）
+- `g.emoji` 双端防护：视图用 `esc` 转义；`validGoodsData`/`validateState` 限制为长度 ≤ 16 且不含 `&<>"']`
+- 分档任务卡片头部改为显示最高档（`Math.max(...levels.map(l => l.points))`），不再用 `levels[0]`
+- 新增 `sumNet(records)`（`balance` 委托给它）与 `fmtPts(n)`（消除浮点尾差），视图内的求和与数值展示统一走这两个函数
+- 打卡页：当前分段无任务时显示空态；`+0` 不再显示正号；周导航按钮加 `aria-label`；`.mini` 按钮禁止压缩换行
+
+### Task 11 补充（提交 eacab2d、d4786cf、187a8e1）
+- 所有变更调用的成功提示都区分 `res.saved === false`（含撤销）；对话框与档位弹窗数值统一 `fmtPts`
+- 任务编辑表单的档位文本使用 `esc(l.label)`；`validTaskData`/`validTask` 同时拒绝含 `&<>"'` 的档位名
+- 导入：去除 UTF-8 BOM、增加 `reader.onerror` 提示
+- `state.init` 改用 `safeStorage()`，localStorage 访问抛异常时应用仍可加载（内存模式，保存会提示失败）
+- 商品积分改用 `parseFloat`（与任务一致，支持小数）
+- `formTask`/`levelPicker` 增加 `!cat`/`!t` 防御性守卫
+
+### Task 12 补充（提交 c8e9957）
+- Service Worker 改为「在线优先、离线回退缓存」：手机上再次打开（联网）即拿到新版本，离线功能不变
+- 激活时只清理 `dd-points-` 前缀的缓存，避免误删同域（github.io 共享域）其他项目的缓存
+- README 更新说明以此为准：联网时下次打开即生效
