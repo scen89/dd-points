@@ -11,6 +11,7 @@ export function authSetupHtml() {
     <input id="lock-pin2" class="lock-input" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6" placeholder="再输一次确认">
     <label class="lock-remember"><input type="checkbox" id="lock-remember" checked> 记住密码，下次直接进入</label>
     <button class="btn primary lock-btn" data-act="lock-setup">设置并进入</button>
+    <button class="lock-link" data-act="lock-skip">暂不设置，先使用</button>
   </div>`;
 }
 

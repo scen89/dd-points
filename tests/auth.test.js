@@ -74,3 +74,35 @@ test('clearAuth 清除后无密码', async () => {
   assert.equal(A.hasPin(s), false);
   assert.equal(A.isRemembered(s), false);
 });
+
+test('恢复码确认状态与重新生成：新码可用、旧码作废', async () => {
+  const s = memStorage();
+  const first = await A.setPin('1234', s);
+  assert.equal(A.isCodeAcked(s), false);
+  assert.equal(A.acknowledgeCode(s).ok, true);
+  assert.equal(A.isCodeAcked(s), true);
+  const regen = await A.regenerateRecoveryCode(s);
+  assert.equal(regen.ok, true);
+  assert.equal(A.isCodeAcked(s), false);
+  assert.notEqual(regen.recoveryCode, first.recoveryCode);
+  assert.equal((await A.resetWithRecovery(first.recoveryCode, '5678', s)).ok, false);
+  assert.equal((await A.resetWithRecovery(regen.recoveryCode, '5678', s)).ok, true);
+});
+
+test('存储不可用时 setPin/acknowledge 返回失败且不抛出', async () => {
+  const failStorage = { getItem: () => null, setItem: () => { throw new Error('quota'); }, removeItem: () => {} };
+  const res = await A.setPin('1234', failStorage);
+  assert.equal(res.ok, false);
+  assert.equal(A.hasPin(failStorage), false);
+  assert.equal(A.acknowledgeCode(failStorage).ok, false);
+});
+
+test('导出备份不含认证数据', async () => {
+  const { createSeedState, buildExport } = await import('../js/store.js');
+  const s = memStorage();
+  await A.setPin('1234', s);
+  const payload = JSON.stringify(buildExport(createSeedState()));
+  assert.ok(!payload.includes('pinHash'));
+  assert.ok(!payload.includes('recoveryHash'));
+  assert.ok(!payload.includes('dengdeng_auth'));
+});

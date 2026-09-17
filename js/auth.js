@@ -91,6 +91,11 @@ export function isRemembered(storage) {
   return !!(a && a.pinHash && a.remember === true);
 }
 
+export function isCodeAcked(storage) {
+  const a = loadAuth(storage);
+  return !!(a && a.pinHash && a.codeAck === true);
+}
+
 export function remember(storage) {
   const a = loadAuth(storage);
   if (!a) return { ok: false, error: '尚未设置密码' };
@@ -103,6 +108,24 @@ export function forget(storage) {
   if (!a) return { ok: false };
   a.remember = false;
   return { ok: saveAuth(a, storage) };
+}
+
+export function acknowledgeCode(storage) {
+  const a = loadAuth(storage);
+  if (!a) return { ok: false };
+  a.codeAck = true;
+  return { ok: saveAuth(a, storage) };
+}
+
+export async function regenerateRecoveryCode(storage) {
+  const a = loadAuth(storage);
+  if (!a) return { ok: false, error: '尚未设置密码' };
+  const recoveryCode = generateRecoveryCode();
+  const recoveryHash = await hashSecret(recoveryCode, a.salt, a.iterations || ITERATIONS);
+  a.recoveryHash = recoveryHash;
+  a.codeAck = false;
+  if (!saveAuth(a, storage)) return { ok: false, error: '本机保存失败' };
+  return { ok: true, recoveryCode };
 }
 
 export function clearAuth(storage) {
@@ -122,7 +145,7 @@ export async function setPin(pin, storage) {
   const pinHash = await hashSecret(String(pin), salt, ITERATIONS);
   const recoveryCode = generateRecoveryCode();
   const recoveryHash = await hashSecret(recoveryCode, salt, ITERATIONS);
-  const auth = { v: 1, salt, iterations: ITERATIONS, pinHash, recoveryHash, remember: false, createdAt: Date.now() };
+  const auth = { v: 1, salt, iterations: ITERATIONS, pinHash, recoveryHash, remember: false, codeAck: false, createdAt: Date.now() };
   if (!saveAuth(auth, storage)) return { ok: false, error: '本机保存失败，空间可能已满' };
   return { ok: true, recoveryCode };
 }

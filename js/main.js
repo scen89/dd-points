@@ -20,6 +20,7 @@ const route = { name: 'check', date: todayStr(), weekOffset: 0, seg: 'reward', c
 let lastToday = todayStr();
 let lockState = null;
 let pendingRecoveryCode = '';
+let authBusy = false;
 
 function render() {
   if (lockState) {
@@ -612,58 +613,116 @@ document.addEventListener('click', async function (e) {
 
   /* ---------- 家长锁 ---------- */
   if (act === 'lock-setup') {
-    const pin = document.getElementById('lock-pin').value.trim();
-    const pin2 = document.getElementById('lock-pin2').value.trim();
-    const remember = document.getElementById('lock-remember').checked;
-    if (!/^\d{4,6}$/.test(pin)) return toast('密码需为 4-6 位数字');
-    if (pin !== pin2) return toast('两次输入不一致');
-    const res = await auth.setPin(pin);
-    if (!res.ok) return toast(res.error);
-    if (remember) auth.remember();
-    pendingRecoveryCode = res.recoveryCode;
-    lockState = 'code';
+    if (authBusy) return;
+    authBusy = true;
+    try {
+      const pin = document.getElementById('lock-pin').value.trim();
+      const pin2 = document.getElementById('lock-pin2').value.trim();
+      const remember = document.getElementById('lock-remember').checked;
+      if (!/^\d{4,6}$/.test(pin)) return toast('密码需为 4-6 位数字');
+      if (pin !== pin2) return toast('两次输入不一致');
+      const res = await auth.setPin(pin);
+      if (!res.ok) return toast(res.error);
+      if (remember) auth.remember();
+      pendingRecoveryCode = res.recoveryCode;
+      lockState = 'code';
+      render();
+    } catch (e) {
+      toast('操作失败，请重试');
+    } finally {
+      authBusy = false;
+    }
+    return;
+  }
+  if (act === 'lock-skip') {
+    lockState = null;
+    render();
+    toast('已跳过，可在「我的」里设置密码');
+    return;
+  }
+  if (act === 'lock-setup-open') {
+    lockState = 'setup';
     render();
     return;
   }
   if (act === 'lock-enter') {
-    const pin = document.getElementById('lock-pin').value.trim();
-    const remember = document.getElementById('lock-remember').checked;
-    const ok = await auth.verifyPin(pin);
-    if (!ok) return toast('密码错误');
-    if (remember) auth.remember();
-    lockState = null;
-    render();
+    if (authBusy) return;
+    authBusy = true;
+    try {
+      const pin = document.getElementById('lock-pin').value.trim();
+      const remember = document.getElementById('lock-remember').checked;
+      const ok = await auth.verifyPin(pin);
+      if (!ok) return toast('密码错误');
+      if (!auth.isCodeAcked()) {
+        const rr = await auth.regenerateRecoveryCode();
+        if (rr.ok) {
+          pendingRecoveryCode = rr.recoveryCode;
+          lockState = 'code';
+          render();
+          return;
+        }
+      }
+      if (remember) auth.remember();
+      lockState = null;
+      render();
+    } catch (e) {
+      toast('操作失败，请重试');
+    } finally {
+      authBusy = false;
+    }
     return;
   }
   if (act === 'lock-forgot') { lockState = 'recovery'; render(); return; }
   if (act === 'lock-back') { lockState = 'lock'; render(); return; }
   if (act === 'lock-recover') {
-    const code = document.getElementById('lock-code').value;
-    const pin = document.getElementById('lock-pin').value.trim();
-    const pin2 = document.getElementById('lock-pin2').value.trim();
-    if (!/^\d{4,6}$/.test(pin)) return toast('密码需为 4-6 位数字');
-    if (pin !== pin2) return toast('两次输入不一致');
-    const res = await auth.resetWithRecovery(code, pin);
-    if (!res.ok) return toast(res.error);
-    pendingRecoveryCode = res.recoveryCode;
-    lockState = 'code';
+    if (authBusy) return;
+    authBusy = true;
+    try {
+      const code = document.getElementById('lock-code').value;
+      const pin = document.getElementById('lock-pin').value.trim();
+      const pin2 = document.getElementById('lock-pin2').value.trim();
+      if (!/^\d{4,6}$/.test(pin)) return toast('密码需为 4-6 位数字');
+      if (pin !== pin2) return toast('两次输入不一致');
+      const res = await auth.resetWithRecovery(code, pin);
+      if (!res.ok) return toast(res.error);
+      pendingRecoveryCode = res.recoveryCode;
+      lockState = 'code';
+      render();
+    } catch (e) {
+      toast('操作失败，请重试');
+    } finally {
+      authBusy = false;
+    }
+    return;
+  }
+  if (act === 'lock-code-done') {
+    const ack = auth.acknowledgeCode();
+    if (!ack.ok) toast('注意：恢复码确认未保存');
+    lockState = null;
     render();
     return;
   }
-  if (act === 'lock-code-done') { lockState = null; render(); return; }
   if (act === 'pin-change') { formPinChange(); return; }
   if (act === 'pin-change-save') {
-    const cur = document.getElementById('pin-cur').value.trim();
-    const next = document.getElementById('pin-new').value.trim();
-    const next2 = document.getElementById('pin-new2').value.trim();
-    if (!/^\d{4,6}$/.test(next)) return toast('密码需为 4-6 位数字');
-    if (next !== next2) return toast('两次输入不一致');
-    const res = await auth.changePin(cur, next);
-    if (!res.ok) return toast(res.error);
-    closeModal();
-    pendingRecoveryCode = res.recoveryCode;
-    lockState = 'code';
-    render();
+    if (authBusy) return;
+    authBusy = true;
+    try {
+      const cur = document.getElementById('pin-cur').value.trim();
+      const next = document.getElementById('pin-new').value.trim();
+      const next2 = document.getElementById('pin-new2').value.trim();
+      if (!/^\d{4,6}$/.test(next)) return toast('密码需为 4-6 位数字');
+      if (next !== next2) return toast('两次输入不一致');
+      const res = await auth.changePin(cur, next);
+      if (!res.ok) return toast(res.error);
+      closeModal();
+      pendingRecoveryCode = res.recoveryCode;
+      lockState = 'code';
+      render();
+    } catch (e) {
+      toast('操作失败，请重试');
+    } finally {
+      authBusy = false;
+    }
     return;
   }
   if (act === 'logout') {
@@ -688,8 +747,19 @@ document.addEventListener('click', async function (e) {
 
 async function boot() {
   init();
-  if (!auth.hasPin()) lockState = 'setup';
-  else if (!auth.isRemembered()) lockState = 'lock';
+  if (!auth.hasPin()) {
+    lockState = 'setup';
+  } else if (!auth.isCodeAcked()) {
+    const res = await auth.regenerateRecoveryCode();
+    if (res.ok) {
+      pendingRecoveryCode = res.recoveryCode;
+      lockState = 'code';
+    } else {
+      lockState = auth.isRemembered() ? null : 'lock';
+    }
+  } else if (!auth.isRemembered()) {
+    lockState = 'lock';
+  }
   render();
 }
 

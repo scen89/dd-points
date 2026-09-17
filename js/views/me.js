@@ -13,7 +13,10 @@ export function viewMe() {
       </div>
       <div class="menu-row" data-act="logout">
         <span class="mi">🚪</span><span class="mt">退出登录</span><span class="ma">›</span>
-      </div>` : '';
+      </div>` : `
+      <div class="menu-row" data-act="lock-setup-open">
+        <span class="mi">🔒</span><span class="mt">设置密码（家长锁）</span><span class="ma">›</span>
+      </div>`;
 
   return `
   <div class="topbar"><h1>我的</h1></div>

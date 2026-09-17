@@ -121,3 +121,9 @@ test('锁屏相关视图渲染', () => {
   assert.ok(code.includes('ABCD-2345'));
   assert.ok(code.includes('data-act="lock-code-done"'));
 });
+
+test('设置页跳过入口与我的页设置密码入口', () => {
+  assert.ok(authSetupHtml().includes('data-act="lock-skip"'));
+  assert.ok(viewMe().includes('data-act="lock-setup-open"'));
+  assert.ok(viewMe().includes('设置密码'));
+});
