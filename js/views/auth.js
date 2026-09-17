@@ -47,7 +47,7 @@ export function authCodeHtml(code) {
   <div class="lock-screen">
     <div class="lock-logo">📝</div>
     <h1 class="lock-title">恢复码</h1>
-    <p class="lock-sub">请抄写并妥善保存，忘记密码时用它重设。<br>此码只显示这一次。</p>
+    <p class="lock-sub">请抄写并妥善保存，忘记密码时用它重设。<br>未点击下方按钮确认前，重新打开会生成新的恢复码。</p>
     <div class="lock-code">${esc(formatRecoveryCode(code))}</div>
     <button class="btn primary lock-btn" data-act="lock-code-done">我已抄写，开始使用</button>
   </div>`;

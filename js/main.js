@@ -293,6 +293,7 @@ document.addEventListener('click', async function (e) {
   const el = e.target.closest('[data-act]');
   if (!el) return;
   const act = el.dataset.act;
+  if (authBusy) return;
 
   if (act === 'go') {
     route.name = el.dataset.page;
@@ -653,6 +654,7 @@ document.addEventListener('click', async function (e) {
       const remember = document.getElementById('lock-remember').checked;
       const ok = await auth.verifyPin(pin);
       if (!ok) return toast('密码错误');
+      if (remember) auth.remember();
       if (!auth.isCodeAcked()) {
         const rr = await auth.regenerateRecoveryCode();
         if (rr.ok) {
@@ -662,7 +664,6 @@ document.addEventListener('click', async function (e) {
           return;
         }
       }
-      if (remember) auth.remember();
       lockState = null;
       render();
     } catch (e) {
@@ -749,13 +750,13 @@ async function boot() {
   init();
   if (!auth.hasPin()) {
     lockState = 'setup';
-  } else if (!auth.isCodeAcked()) {
+  } else if (auth.isRemembered() && !auth.isCodeAcked()) {
     const res = await auth.regenerateRecoveryCode();
     if (res.ok) {
       pendingRecoveryCode = res.recoveryCode;
       lockState = 'code';
     } else {
-      lockState = auth.isRemembered() ? null : 'lock';
+      lockState = null;
     }
   } else if (!auth.isRemembered()) {
     lockState = 'lock';
