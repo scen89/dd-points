@@ -2383,3 +2383,9 @@ git push -u origin main
 - 详见设计文档「功能增强：可重复任务」；校验允许 `repeat` 缺省，兼容旧备份
 - `latestTaskRecord` 按 `ts` 取当天最近一条；`updateTask` 未传 `repeat` 时保留原值
 - 打卡页分类汇总改为按任务累计（修复多记录汇总）；撤销确认文案统一为「撤销后余额 ±N 分」
+
+### 功能增强：兑换数量与兑换记录（提交 906714a、cf70049、6665aa4）
+- 详见设计文档「功能增强：兑换数量与兑换记录」
+- `maxExchangeCount(bal, price)` 纯函数统一步进器上限（≤ 999），`exchange(goodsId, count)` 以 `round2` 合计并校验
+- 兑换记录渲染为 shop.js 纯函数 `exchangeLogHtml(state)`，便于单测
+- 商品积分最低 0.01、最多两位小数（写入侧与导入校验同时约束）
