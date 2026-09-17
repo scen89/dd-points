@@ -13,11 +13,24 @@ import { viewLedger } from './views/ledger.js';
 import { viewMe } from './views/me.js';
 import { viewManage } from './views/manage.js';
 import { viewManageGoods } from './views/manage-goods.js';
+import * as auth from './auth.js';
+import { authSetupHtml, authLockHtml, authRecoveryHtml, authCodeHtml } from './views/auth.js';
 
 const route = { name: 'check', date: todayStr(), weekOffset: 0, seg: 'reward', chartDays: 7 };
 let lastToday = todayStr();
+let lockState = null;
+let pendingRecoveryCode = '';
 
 function render() {
+  if (lockState) {
+    document.getElementById('tabbar').style.display = 'none';
+    const page = document.getElementById('page');
+    if (lockState === 'setup') page.innerHTML = authSetupHtml();
+    else if (lockState === 'lock') page.innerHTML = authLockHtml();
+    else if (lockState === 'recovery') page.innerHTML = authRecoveryHtml();
+    else page.innerHTML = authCodeHtml(pendingRecoveryCode);
+    return;
+  }
   const t = todayStr();
   if (t !== lastToday) {
     if (route.date === lastToday) route.date = t;
@@ -212,6 +225,24 @@ function formGoods(id) {
   `);
 }
 
+function formPinChange() {
+  openModal(`
+    <div class="sheet-head">修改密码</div>
+    <div class="form">
+      <label>当前密码</label>
+      <input id="pin-cur" type="password" inputmode="numeric" autocomplete="current-password" maxlength="6">
+      <label>新密码（4–6 位数字）</label>
+      <input id="pin-new" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6">
+      <label>再输一次新密码</label>
+      <input id="pin-new2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="6">
+    </div>
+    <div class="sheet-foot">
+      <button class="btn ghost" data-act="close">取消</button>
+      <button class="btn primary" data-act="pin-change-save">保存</button>
+    </div>
+  `);
+}
+
 /* ---------- 业务 ---------- */
 
 function doRecord(catId, kind, taskId, levelIdx) {
@@ -257,7 +288,7 @@ function startImport() {
 
 /* ---------- 事件委托 ---------- */
 
-document.addEventListener('click', function (e) {
+document.addEventListener('click', async function (e) {
   const el = e.target.closest('[data-act]');
   if (!el) return;
   const act = el.dataset.act;
@@ -579,6 +610,71 @@ document.addEventListener('click', function (e) {
     return;
   }
 
+  /* ---------- 家长锁 ---------- */
+  if (act === 'lock-setup') {
+    const pin = document.getElementById('lock-pin').value.trim();
+    const pin2 = document.getElementById('lock-pin2').value.trim();
+    const remember = document.getElementById('lock-remember').checked;
+    if (!/^\d{4,6}$/.test(pin)) return toast('密码需为 4-6 位数字');
+    if (pin !== pin2) return toast('两次输入不一致');
+    const res = await auth.setPin(pin);
+    if (!res.ok) return toast(res.error);
+    if (remember) auth.remember();
+    pendingRecoveryCode = res.recoveryCode;
+    lockState = 'code';
+    render();
+    return;
+  }
+  if (act === 'lock-enter') {
+    const pin = document.getElementById('lock-pin').value.trim();
+    const remember = document.getElementById('lock-remember').checked;
+    const ok = await auth.verifyPin(pin);
+    if (!ok) return toast('密码错误');
+    if (remember) auth.remember();
+    lockState = null;
+    render();
+    return;
+  }
+  if (act === 'lock-forgot') { lockState = 'recovery'; render(); return; }
+  if (act === 'lock-back') { lockState = 'lock'; render(); return; }
+  if (act === 'lock-recover') {
+    const code = document.getElementById('lock-code').value;
+    const pin = document.getElementById('lock-pin').value.trim();
+    const pin2 = document.getElementById('lock-pin2').value.trim();
+    if (!/^\d{4,6}$/.test(pin)) return toast('密码需为 4-6 位数字');
+    if (pin !== pin2) return toast('两次输入不一致');
+    const res = await auth.resetWithRecovery(code, pin);
+    if (!res.ok) return toast(res.error);
+    pendingRecoveryCode = res.recoveryCode;
+    lockState = 'code';
+    render();
+    return;
+  }
+  if (act === 'lock-code-done') { lockState = null; render(); return; }
+  if (act === 'pin-change') { formPinChange(); return; }
+  if (act === 'pin-change-save') {
+    const cur = document.getElementById('pin-cur').value.trim();
+    const next = document.getElementById('pin-new').value.trim();
+    const next2 = document.getElementById('pin-new2').value.trim();
+    if (!/^\d{4,6}$/.test(next)) return toast('密码需为 4-6 位数字');
+    if (next !== next2) return toast('两次输入不一致');
+    const res = await auth.changePin(cur, next);
+    if (!res.ok) return toast(res.error);
+    closeModal();
+    pendingRecoveryCode = res.recoveryCode;
+    lockState = 'code';
+    render();
+    return;
+  }
+  if (act === 'logout') {
+    confirmModal('退出登录', '退出后需要重新输入密码才能进入（积分数据保留）。', function () {
+      auth.forget();
+      lockState = 'lock';
+      render();
+    }, { okText: '退出登录' });
+    return;
+  }
+
   /* ---------- 弹窗 ---------- */
   if (act === 'close') { closeModal(); return; }
   if (act === 'toggle-level') {
@@ -590,8 +686,14 @@ document.addEventListener('click', function (e) {
 
 /* ---------- 启动 ---------- */
 
-init();
-render();
+async function boot() {
+  init();
+  if (!auth.hasPin()) lockState = 'setup';
+  else if (!auth.isRemembered()) lockState = 'lock';
+  render();
+}
+
+boot();
 
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
   window.addEventListener('load', () => {

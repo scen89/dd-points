@@ -253,3 +253,16 @@ input,select,textarea{font-family:inherit;font-size:16px;}
 .day-head{flex-wrap:wrap;row-gap:2px;}
 .day-split{font-variant-numeric:tabular-nums;}
 .chart-legend .lg-note{margin-left:auto;color:var(--t3);font-size:11.5px;}
+
+/* ===== 家长锁 ===== */
+.lock-screen{min-height:calc(100vh - 80px);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 28px;text-align:center;}
+.lock-logo{font-size:52px;line-height:1;margin-bottom:10px;}
+.lock-title{font-size:22px;margin:0 0 6px;font-weight:600;}
+.lock-sub{font-size:13px;color:var(--t2);margin:0 0 22px;line-height:1.7;}
+.lock-input{width:100%;max-width:280px;border:1.5px solid #E3E5E9;border-radius:11px;padding:13px;outline:none;background:#fff;font-size:16px;text-align:center;letter-spacing:2px;margin-bottom:12px;}
+.lock-input:focus{border-color:var(--orange);}
+.lock-remember{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--t2);margin:2px 0 18px;}
+.lock-remember input{width:18px;height:18px;accent-color:var(--orange);}
+.lock-btn{width:100%;max-width:280px;padding:13px;}
+.lock-link{margin-top:16px;color:var(--blue);font-size:13.5px;padding:6px;}
+.lock-code{font-size:26px;font-weight:700;letter-spacing:3px;color:var(--orange);background:var(--orange-l);border-radius:12px;padding:16px 22px;margin-bottom:18px;font-variant-numeric:tabular-nums;}

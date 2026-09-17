@@ -1,9 +1,9 @@
 const CACHE = 'dd-points-v1';
 const ASSETS = [
   './', './index.html', './css/app.css',
-  './js/main.js', './js/util.js', './js/store.js', './js/state.js', './js/chart.js',
+  './js/main.js', './js/util.js', './js/store.js', './js/state.js', './js/chart.js', './js/auth.js',
   './js/views/check.js', './js/views/shop.js', './js/views/ledger.js',
-  './js/views/me.js', './js/views/manage.js', './js/views/manage-goods.js',
+  './js/views/me.js', './js/views/manage.js', './js/views/manage-goods.js', './js/views/auth.js',
   './manifest.webmanifest',
   './icons/icon-192.png', './icons/icon-512.png', './icons/icon-maskable-512.png'
 ];

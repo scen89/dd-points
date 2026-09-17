@@ -1,11 +1,19 @@
 import { getState, balance, totals } from '../state.js';
 import { fmtPts } from '../util.js';
+import * as auth from '../auth.js';
 
 export function viewMe() {
   const state = getState();
   const bal = balance(state.ledger);
   const { income, spend, checkinDays } = totals(state.ledger);
   const tasks = state.categories.reduce((s, c) => s + c.rewards.length + c.penalties.length, 0);
+  const lockRows = auth.hasPin() ? `
+      <div class="menu-row" data-act="pin-change">
+        <span class="mi">🔑</span><span class="mt">修改密码</span><span class="ma">›</span>
+      </div>
+      <div class="menu-row" data-act="logout">
+        <span class="mi">🚪</span><span class="mt">退出登录</span><span class="ma">›</span>
+      </div>` : '';
 
   return `
   <div class="topbar"><h1>我的</h1></div>
@@ -34,6 +42,7 @@ export function viewMe() {
       <div class="menu-row" data-act="import">
         <span class="mi">📥</span><span class="mt">导入备份恢复</span><span class="ma">›</span>
       </div>
+      ${lockRows}
       <div class="menu-row" data-act="reset">
         <span class="mi">🔄</span><span class="mt">清空所有记录</span><span class="ma">›</span>
       </div>

@@ -7,6 +7,7 @@ import { viewLedger } from '../js/views/ledger.js';
 import { viewMe } from '../js/views/me.js';
 import { viewManage } from '../js/views/manage.js';
 import { viewManageGoods } from '../js/views/manage-goods.js';
+import { authSetupHtml, authLockHtml, authRecoveryHtml, authCodeHtml } from '../js/views/auth.js';
 
 function memStorage() {
   const m = new Map();
@@ -109,4 +110,14 @@ test('明细页显示奖惩双柱、拆分与占比', () => {
   assert.ok(html.includes('任务净'));
   assert.ok(html.includes('仅统计打卡，不含兑换'));
   assert.ok(html.includes('（50%）'), '等额奖惩应显示 50%');
+});
+
+test('锁屏相关视图渲染', () => {
+  assert.ok(authSetupHtml().includes('data-act="lock-setup"'));
+  assert.ok(authLockHtml().includes('data-act="lock-enter"'));
+  assert.ok(authLockHtml().includes('忘记密码'));
+  assert.ok(authRecoveryHtml().includes('data-act="lock-recover"'));
+  const code = authCodeHtml('ABCD2345');
+  assert.ok(code.includes('ABCD-2345'));
+  assert.ok(code.includes('data-act="lock-code-done"'));
 });
