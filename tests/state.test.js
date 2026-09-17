@@ -310,3 +310,21 @@ test('写入侧校验拒绝非数组档位与非法日历日期', () => {
   assert.equal(S.recordTask(state.categories[0].id, 'reward', state.categories[0].rewards[0].id, '2026-02-31').ok, false);
   assert.equal(validateState(state).ok, true);
 });
+
+test('可重复任务同日多次记分，非重复仍去重', () => {
+  const { state } = freshState();
+  const cat = state.categories[0];
+  const normal = cat.rewards.find(t => t.mode === 'normal');
+  assert.equal(S.recordTask(cat.id, 'reward', normal.id, '2026-09-15').ok, true);
+  assert.equal(S.recordTask(cat.id, 'reward', normal.id, '2026-09-15').ok, false);
+
+  const rep = S.addTask(cat.id, 'reward', { name: '可重复任务', mode: 'normal', points: 2, levels: [], repeat: true });
+  assert.equal(rep.ok, true);
+  assert.equal(S.recordTask(cat.id, 'reward', rep.id, '2026-09-15').ok, true);
+  assert.equal(S.recordTask(cat.id, 'reward', rep.id, '2026-09-15').ok, true);
+  const recs = state.ledger.filter(r => r.taskId === rep.id);
+  assert.equal(recs.length, 2);
+  assert.equal(S.latestTaskRecord(state.ledger, rep.id, '2026-09-15').id, recs[recs.length - 1].id);
+  assert.equal(S.latestTaskRecord(state.ledger, rep.id, '2026-09-14'), null);
+  assert.equal(validateState(state).ok, true);
+});

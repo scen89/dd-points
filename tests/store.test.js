@@ -149,3 +149,15 @@ test('validateState 拒绝非数组档位与非法日历日期', () => {
   s3.ledger.push({ id: 'c1', type: 'in', points: 1, source: 'task', title: 't', date: '2026-02-31', ts: 1 });
   assert.equal(validateState(s3).ok, false);
 });
+
+test('种子任务含 repeat 字段且校验兼容缺省 repeat', () => {
+  const s = createSeedState();
+  for (const c of s.categories) {
+    for (const t of [...c.rewards, ...c.penalties]) assert.equal(typeof t.repeat, 'boolean');
+  }
+  assert.equal(validateState(s).ok, true);
+  delete s.categories[0].rewards[0].repeat;
+  assert.equal(validateState(s).ok, true);
+  s.categories[0].rewards[0].repeat = 'yes';
+  assert.equal(validateState(s).ok, false);
+});

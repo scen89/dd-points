@@ -134,10 +134,11 @@ function hasOnlyKeys(o, allowed) {
 
 function validTaskData(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return '任务数据非法';
-  if (!hasOnlyKeys(data, ['name', 'mode', 'points', 'levels'])) return '任务包含未知字段';
+  if (!hasOnlyKeys(data, ['name', 'mode', 'points', 'levels', 'repeat'])) return '任务包含未知字段';
   if (typeof data.name !== 'string' || !data.name.trim()) return '任务名称不能为空';
   if (data.mode !== 'normal' && data.mode !== 'level') return '任务类型非法';
   if (!Number.isFinite(data.points) || !(data.points > 0)) return '任务分值必须为正数';
+  if (data.repeat !== undefined && typeof data.repeat !== 'boolean') return '任务 repeat 非法';
   if (!Array.isArray(data.levels)) return '任务缺少档位列表';
   if (data.mode === 'level') {
     if (!data.levels.length) return '分档任务至少需要一个档位';
@@ -169,7 +170,7 @@ export function recordTask(catId, kind, taskId, date, levelIdx = null) {
   if (!cat) return { ok: false, error: '分类不存在' };
   const task = findList(cat, kind).find(t => t.id === taskId);
   if (!task) return { ok: false, error: '任务不存在' };
-  if (s.ledger.some(r => r.source === 'task' && r.date === date && r.taskId === taskId)) {
+  if (task.repeat !== true && s.ledger.some(r => r.source === 'task' && r.date === date && r.taskId === taskId)) {
     return { ok: false, error: '当天已经记过了，请先撤销' };
   }
   let points = task.points;
@@ -193,6 +194,14 @@ export function recordTask(catId, kind, taskId, date, levelIdx = null) {
   };
   s.ledger.push(entry);
   return { ok: true, entry, saved: persist().ok };
+}
+
+export function latestTaskRecord(ledger, taskId, date) {
+  let found = null;
+  for (const r of ledger) {
+    if (r.source === 'task' && r.taskId === taskId && r.date === date) found = r;
+  }
+  return found;
 }
 
 export function undoRecord(entryId) {
@@ -250,7 +259,7 @@ export function addTask(catId, kind, data) {
   if (!cat) return { ok: false, error: '分类不存在' };
   const err = validTaskData(data);
   if (err) return { ok: false, error: err };
-  const task = { id: uid(), name: data.name, mode: data.mode, points: data.points, levels: data.levels || [] };
+  const task = { id: uid(), name: data.name, mode: data.mode, points: data.points, levels: data.levels || [], repeat: data.repeat === true };
   findList(cat, kind).push(task);
   return { ok: true, id: task.id, saved: persist().ok };
 }
@@ -263,7 +272,7 @@ export function updateTask(catId, kind, taskId, data) {
   if (!task) return { ok: false, error: '任务不存在' };
   const err = validTaskData(data);
   if (err) return { ok: false, error: err };
-  Object.assign(task, { name: data.name, mode: data.mode, points: data.points, levels: data.levels || [] });
+  Object.assign(task, { name: data.name, mode: data.mode, points: data.points, levels: data.levels || [], repeat: data.repeat === true });
   return { ok: true, saved: persist().ok };
 }
 

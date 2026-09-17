@@ -1,4 +1,4 @@
-import { getState, weekDates, ds, todayStr, balance, netSum, sumNet } from '../state.js';
+import { getState, weekDates, ds, todayStr, balance, netSum } from '../state.js';
 import { esc, fmtPts } from '../util.js';
 
 export function viewCheck(route) {
@@ -8,8 +8,13 @@ export function viewCheck(route) {
   const kind = route.seg;
   const bal = balance(state.ledger);
   const doneMap = {};
+  const countMap = {};
+  const sumMap = {};
   state.ledger.forEach(r => {
-    if (r.date === d && r.source === 'task') doneMap[r.taskId] = r;
+    if (r.date !== d || r.source !== 'task') return;
+    countMap[r.taskId] = (countMap[r.taskId] || 0) + 1;
+    sumMap[r.taskId] = (sumMap[r.taskId] || 0) + (r.type === 'in' ? r.points : -r.points);
+    doneMap[r.taskId] = r;
   });
 
   const todaySum = netSum(state.ledger, [todayStr()]);
@@ -55,8 +60,7 @@ export function viewCheck(route) {
     if (!list.length) return;
     shown++;
 
-    const catRecs = list.map(t => doneMap[t.id]).filter(Boolean);
-    const catSum = sumNet(catRecs);
+    const catSum = list.reduce((s, t) => s + (sumMap[t.id] || 0), 0);
 
     h += `<div class="card">
       <div class="cat-title ${kind === 'penalty' ? 'pen' : ''}">
@@ -66,19 +70,27 @@ export function viewCheck(route) {
       </div>`;
 
     list.forEach(t => {
-      const rec = doneMap[t.id];
-      const done = !!rec;
+      const cnt = countMap[t.id] || 0;
+      const repeatable = t.repeat === true;
+      const done = !repeatable && cnt > 0;
       const sign = kind === 'penalty' ? '-' : '+';
       const lv = Array.isArray(t.levels) ? t.levels : [];
       const maxPts = lv.length ? Math.max(...lv.map(l => l.points)) : t.points;
       const ptsTxt = t.mode === 'level' ? '最高' + sign + fmtPts(maxPts) : sign + fmtPts(t.points);
-      const sub = t.mode === 'level'
-        ? `<i>${lv.map(l => esc(l.label) + ' ' + fmtPts(l.points) + '分').join(' / ')}</i>`
+      const subParts = [];
+      if (t.mode === 'level') subParts.push(lv.map(l => esc(l.label) + ' ' + fmtPts(l.points) + '分').join(' / '));
+      if (repeatable) subParts.push('可重复');
+      const sub = subParts.length ? `<i>${subParts.join(' · ')}</i>` : '';
+      const countBadge = repeatable && cnt > 0 ? `<span class="tcount">×${cnt}</span>` : '';
+      const undoBtn = repeatable && cnt > 0
+        ? `<button class="tbtn undo" data-act="task-undo" data-cat="${cat.id}" data-kind="${kind}" data-id="${t.id}" aria-label="撤销最近一次">−</button>`
         : '';
       h += `<div class="task ${done ? 'done' : ''}" data-act="task"
               data-cat="${cat.id}" data-kind="${kind}" data-id="${t.id}">
         <div class="tname">${esc(t.name)}${sub}</div>
+        ${countBadge}
         <div class="tpts ${kind === 'penalty' ? 'minus' : 'plus'}">${ptsTxt}</div>
+        ${undoBtn}
         <div class="tbtn ${kind === 'penalty' ? 'pen' : ''}">${done ? '✓' : '＋'}</div>
       </div>`;
     });

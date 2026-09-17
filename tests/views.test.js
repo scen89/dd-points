@@ -45,3 +45,16 @@ test('六个视图对恶意数据不崩溃且转义', () => {
     assert.ok(!html.includes('<img'), '存在未转义的 img 标签');
   }
 });
+
+test('可重复任务渲染计数与撤销按钮', () => {
+  S.init(memStorage());
+  const state = S.getState();
+  const cat = state.categories[0];
+  const rep = S.addTask(cat.id, 'reward', { name: '口算100道', mode: 'normal', points: 2, levels: [], repeat: true });
+  S.recordTask(cat.id, 'reward', rep.id, S.todayStr());
+  S.recordTask(cat.id, 'reward', rep.id, S.todayStr());
+  const html = viewCheck({ name: 'check', date: S.todayStr(), weekOffset: 0, seg: 'reward', chartDays: 7 });
+  assert.ok(html.includes('×2'), '应显示 ×2 计数');
+  assert.ok(html.includes('data-act="task-undo"'), '应显示撤销按钮');
+  assert.ok(html.includes('可重复'), '应显示可重复标记');
+});

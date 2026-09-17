@@ -39,8 +39,9 @@ function mRow(catId, kind, t) {
   const p = t.mode === 'level'
     ? `分档 ${t.levels.map(l => fmtPts(l.points)).join('/')}`
     : sign + fmtPts(t.points);
+  const rep = t.repeat === true ? '<span class="rep-tag">可重复</span>' : '';
   return `<div class="m-row">
-    <div class="m-name">${esc(t.name)}</div>
+    <div class="m-name">${esc(t.name)}${rep}</div>
     <div class="m-pts ${kind === 'penalty' ? 'minus' : 'plus'}">${p}</div>
     <button class="mini" data-act="task-edit" data-cat="${catId}" data-kind="${kind}" data-id="${t.id}">编辑</button>
     <button class="mini danger" data-act="task-del" data-cat="${catId}" data-kind="${kind}" data-id="${t.id}">删</button>

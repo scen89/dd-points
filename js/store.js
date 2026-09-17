@@ -21,7 +21,7 @@ export function uid() {
 export function createSeedState() {
   const now = Date.now();
   const T = (name, points, extra) =>
-    Object.assign({ id: uid(), name, mode: 'normal', points, levels: [] }, extra || {});
+    Object.assign({ id: uid(), name, mode: 'normal', points, levels: [], repeat: false }, extra || {});
   const cat = (name, rewards, penalties) => ({ id: uid(), name, rewards, penalties });
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -128,11 +128,12 @@ function isPlainObject(v) {
 
 function validTask(t) {
   if (!isPlainObject(t)) return '任务不是对象';
-  if (!hasOnlyKeys(t, ['id', 'name', 'mode', 'points', 'levels'])) return '任务包含未知字段';
+  if (!hasOnlyKeys(t, ['id', 'name', 'mode', 'points', 'levels', 'repeat'])) return '任务包含未知字段';
   if (typeof t.id !== 'string' || !ID_RE.test(t.id)) return '任务 id 非法';
   if (typeof t.name !== 'string' || !t.name) return '任务缺少名称';
   if (t.mode !== 'normal' && t.mode !== 'level') return '任务 mode 非法：' + t.mode;
   if (!Number.isFinite(t.points) || !(t.points > 0)) return '任务分值必须为正数';
+  if (t.repeat !== undefined && typeof t.repeat !== 'boolean') return '任务 repeat 非法';
   if (!Array.isArray(t.levels)) return '任务缺少档位列表';
   if (t.mode === 'level') {
     if (!t.levels.length) return '分档任务缺少档位';

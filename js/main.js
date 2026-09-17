@@ -1,5 +1,5 @@
 import {
-  init, getState, recordTask, undoRecord, exchange, balance,
+  init, getState, recordTask, undoRecord, latestTaskRecord, exchange, balance,
   addCategory, renameCategory, removeCategory,
   addTask, updateTask, removeTask,
   addGoods, updateGoods, removeGoods,
@@ -98,6 +98,7 @@ function formTask(catId, kind, taskId) {
   const list = kind === 'penalty' ? cat.penalties : cat.rewards;
   const t = taskId ? list.find(x => x.id === taskId) : null;
   const isLevel = !!(t && t.mode === 'level');
+  const isRepeat = !!(t && t.repeat === true);
   const lv = isLevel ? t.levels.map(l => `${esc(l.label)},${l.points}`).join('\n') : '';
   const kindName = kind === 'penalty' ? '惩罚' : '奖励';
 
@@ -113,6 +114,11 @@ function formTask(catId, kind, taskId) {
       <label class="ck">
         <input type="checkbox" id="f-level" data-act="toggle-level" ${isLevel ? 'checked' : ''}>
         分档任务（如午睡、单元测试）
+      </label>
+
+      <label class="ck">
+        <input type="checkbox" id="f-repeat" ${isRepeat ? 'checked' : ''}>
+        可重复（一天可多次加/减分）
       </label>
 
       <div id="f-level-box" style="display:${isLevel ? 'block' : 'none'}">
@@ -257,6 +263,34 @@ document.addEventListener('click', function (e) {
     return;
   }
 
+  if (act === 'task-undo') {
+    const catId = el.dataset.cat;
+    const kind = el.dataset.kind;
+    const id = el.dataset.id;
+    const state = getState();
+    const c = state.categories.find(x => x.id === catId);
+    if (!c) return;
+    const list = kind === 'penalty' ? c.penalties : c.rewards;
+    const t = list.find(x => x.id === id);
+    if (!t) return;
+    const rec = latestTaskRecord(state.ledger, id, route.date);
+    if (!rec) { toast('没有可撤销的记录'); return; }
+    const isIn = rec.type === 'in';
+    const ptsTxt = (isIn ? '+' : '-') + fmtPts(rec.points) + ' 分';
+    confirmModal(
+      '撤销最近一次',
+      `撤销「${esc(t.name)}」最近一次记录？<br>将退回 <b style="color:${isIn ? '#FF8A3D' : '#E5484D'};font-size:17px">${ptsTxt}</b>`,
+      function () {
+        const res = undoRecord(rec.id);
+        if (!res.ok) { toast(res.error || '撤销失败'); render(); return; }
+        render();
+        toast(res.saved === false ? '已撤销，但本机保存失败' : '已撤销');
+      },
+      { danger: true, okText: '确认撤销' }
+    );
+    return;
+  }
+
   if (act === 'task') {
     const catId = el.dataset.cat;
     const kind = el.dataset.kind;
@@ -268,7 +302,9 @@ document.addEventListener('click', function (e) {
     const t = list.find(x => x.id === id);
     if (!t) return;
 
-    const rec = state.ledger.find(r => r.source === 'task' && r.date === route.date && r.taskId === id);
+    const rec = t.repeat === true
+      ? null
+      : state.ledger.find(r => r.source === 'task' && r.date === route.date && r.taskId === id);
 
     if (rec) {
       const isIn = rec.type === 'in';
@@ -391,6 +427,7 @@ document.addEventListener('click', function (e) {
     if (!name) return toast('请输入任务名称');
 
     const isLevel = document.getElementById('f-level').checked;
+    const repeat = document.getElementById('f-repeat').checked;
     let levels = [];
     let pts = Math.abs(parseFloat(document.getElementById('f-pts').value) || 0);
 
@@ -408,7 +445,7 @@ document.addEventListener('click', function (e) {
       if (!pts) return toast('请输入分值');
     }
 
-    const data = { name, mode: isLevel ? 'level' : 'normal', points: pts, levels };
+    const data = { name, mode: isLevel ? 'level' : 'normal', points: pts, levels, repeat };
     const res = id ? updateTask(catId, kind, id, data) : addTask(catId, kind, data);
     if (!res.ok) return toast(res.error);
     closeModal();

@@ -229,3 +229,8 @@ input,select,textarea{font-family:inherit;font-size:16px;}
 .chart-head .ct{font-size:14px;font-weight:600;}
 .chart-seg{margin:0;width:132px;padding:2px;}
 .chart-seg button{padding:5px 0;font-size:13px;border-radius:7px;}
+
+/* ===== 可重复任务 ===== */
+.task .tcount{font-size:12px;font-weight:600;color:var(--green);background:var(--green-l);border-radius:8px;padding:2px 6px;flex-shrink:0;font-variant-numeric:tabular-nums;}
+.tbtn.undo{background:#EFF1F4;color:var(--t2);font-size:16px;}
+.m-name .rep-tag{font-size:11px;color:var(--green);background:var(--green-l);border-radius:6px;padding:1px 5px;margin-left:6px;}
