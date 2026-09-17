@@ -243,3 +243,12 @@ input,select,textarea{font-family:inherit;font-size:16px;}
 .qty-sum{text-align:center;font-size:14px;color:var(--t2);padding-bottom:6px;font-variant-numeric:tabular-nums;}
 .qty-sum b{color:var(--orange);}
 .log-sum{font-size:13px;color:var(--t2);padding:2px 0 12px;text-align:center;font-variant-numeric:tabular-nums;}
+
+/* ===== 奖惩双柱图 ===== */
+.chart-legend{display:flex;align-items:center;gap:16px;padding:2px 4px 0;font-size:12px;color:var(--t2);}
+.chart-legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;}
+.chart-legend i.lg-dot.reward{background:var(--orange);}
+.chart-legend i.lg-dot.penalty{background:var(--red);}
+.chart-sum{font-size:12.5px;color:var(--t2);padding:5px 4px 8px;font-variant-numeric:tabular-nums;}
+.day-head{flex-wrap:wrap;row-gap:2px;}
+.day-split{font-variant-numeric:tabular-nums;}

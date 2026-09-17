@@ -91,3 +91,19 @@ test('兑换记录列表渲染与空态', () => {
   assert.ok(html.indexOf('另一件') < html.indexOf('测试零食'));
   assert.ok(!html.includes('测试任务记录'), '兑换记录不应包含打卡流水');
 });
+
+test('明细页显示奖惩双柱、拆分与占比', () => {
+  S.init(memStorage());
+  const state = S.getState();
+  const cat = state.categories[0];
+  const rw = cat.rewards[0];
+  const pn = cat.penalties[0];
+  S.recordTask(cat.id, 'reward', rw.id, S.todayStr());
+  S.recordTask(cat.id, 'penalty', pn.id, S.todayStr());
+  const html = viewLedger({ name: 'ledger', chartDays: 7 });
+  assert.ok(html.includes('每日奖惩'));
+  assert.ok(html.includes('奖励 <b class="plus">+' + rw.points + '</b>'));
+  assert.ok(html.includes('惩罚 <b class="minus">-' + pn.points + '</b>'));
+  assert.ok(html.includes('近7天'));
+  assert.ok(html.includes('%'));
+});

@@ -43,14 +43,23 @@ test('balance/dayNet/netSum 计算正确', () => {
   assert.equal(S.netSum(ledger, ['2026-09-13']), 0);
 });
 
-test('chartSeries 返回最近 N 天（含今天）最旧在前', () => {
-  const ledger = [A('in', 4, '2026-09-15'), A('in', 2, '2026-09-14')];
+test('chartSeries 返回最近 N 天奖惩拆分（不含兑换）', () => {
+  const ledger = [
+    A('in', 4, '2026-09-15'),
+    A('out', 2, '2026-09-15'),
+    A('in', 2, '2026-09-14'),
+    { id: 'ex1', type: 'out', points: 3, source: 'exchange', title: '兑换 · 测试', date: '2026-09-15', ts: 9 }
+  ];
   const series = S.chartSeries(ledger, 7, new Date(2026, 8, 15));
   assert.equal(series.length, 7);
   assert.equal(series[0].date, '2026-09-09');
   assert.equal(series[6].date, '2026-09-15');
-  assert.equal(series[6].value, 4);
-  assert.equal(series[5].value, 2);
+  assert.equal(series[6].reward, 4);
+  assert.equal(series[6].penalty, 2);
+  assert.equal(series[6].net, 2);
+  assert.equal(series[5].reward, 2);
+  assert.equal(series[0].reward, 0);
+  assert.equal(series[0].penalty, 0);
   assert.ok(series[6].label.length > 0);
 });
 
@@ -84,7 +93,7 @@ test('空账本的派生计算输出为零值', () => {
   assert.equal(S.netSum([], ['2026-09-15']), 0);
   const series = S.chartSeries([], 7, new Date(2026, 8, 15));
   assert.equal(series.length, 7);
-  assert.ok(series.every(x => x.value === 0));
+  assert.ok(series.every(x => x.reward === 0 && x.penalty === 0 && x.net === 0));
   assert.deepEqual(S.groupByDate([]), { dates: [], byDate: {} });
   assert.deepEqual(S.totals([]), { income: 0, spend: 0, checkinDays: 0, count: 0 });
 });
@@ -106,7 +115,7 @@ test('负余额与负净得分', () => {
   assert.equal(S.balance(ledger), -7);
   assert.equal(S.dayNet(ledger, '2026-09-15'), -7);
   const series = S.chartSeries(ledger, 7, new Date(2026, 8, 15));
-  assert.equal(series[6].value, -7);
+  assert.equal(series[6].net, -7);
 });
 
 test('weekDates 跨年边界', () => {
