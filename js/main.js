@@ -276,10 +276,9 @@ document.addEventListener('click', function (e) {
     const rec = latestTaskRecord(state.ledger, id, route.date);
     if (!rec) { toast('没有可撤销的记录'); return; }
     const isIn = rec.type === 'in';
-    const ptsTxt = (isIn ? '+' : '-') + fmtPts(rec.points) + ' 分';
     confirmModal(
       '撤销最近一次',
-      `撤销「${esc(t.name)}」最近一次记录？<br>将退回 <b style="color:${isIn ? '#FF8A3D' : '#E5484D'};font-size:17px">${ptsTxt}</b>`,
+      `撤销「${esc(t.name)}」最近一次记录？<br>撤销后余额 <b style="color:${isIn ? '#FF8A3D' : '#E5484D'};font-size:17px">${isIn ? '-' : '+'}${fmtPts(rec.points)} 分</b>`,
       function () {
         const res = undoRecord(rec.id);
         if (!res.ok) { toast(res.error || '撤销失败'); render(); return; }
@@ -308,10 +307,9 @@ document.addEventListener('click', function (e) {
 
     if (rec) {
       const isIn = rec.type === 'in';
-      const ptsTxt = (isIn ? '+' : '-') + fmtPts(rec.points) + ' 分';
       confirmModal(
         '撤销记录',
-        `确定撤销「${esc(t.name)}」？<br>将退回 <b style="color:${isIn ? '#FF8A3D' : '#E5484D'};font-size:17px">${ptsTxt}</b>`,
+        `确定撤销「${esc(t.name)}」？<br>撤销后余额 <b style="color:${isIn ? '#FF8A3D' : '#E5484D'};font-size:17px">${isIn ? '-' : '+'}${fmtPts(rec.points)} 分</b>`,
         function () {
           const res = undoRecord(rec.id);
           if (!res.ok) { toast(res.error || '撤销失败'); render(); return; }

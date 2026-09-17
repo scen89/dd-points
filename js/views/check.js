@@ -7,14 +7,12 @@ export function viewCheck(route) {
   const d = route.date;
   const kind = route.seg;
   const bal = balance(state.ledger);
-  const doneMap = {};
   const countMap = {};
   const sumMap = {};
   state.ledger.forEach(r => {
     if (r.date !== d || r.source !== 'task') return;
     countMap[r.taskId] = (countMap[r.taskId] || 0) + 1;
     sumMap[r.taskId] = (sumMap[r.taskId] || 0) + (r.type === 'in' ? r.points : -r.points);
-    doneMap[r.taskId] = r;
   });
 
   const todaySum = netSum(state.ledger, [todayStr()]);

@@ -57,4 +57,11 @@ test('可重复任务渲染计数与撤销按钮', () => {
   assert.ok(html.includes('×2'), '应显示 ×2 计数');
   assert.ok(html.includes('data-act="task-undo"'), '应显示撤销按钮');
   assert.ok(html.includes('可重复'), '应显示可重复标记');
+  assert.ok(html.includes('+4'), '分类汇总应累计两条记录');
+
+  const pen = S.addTask(cat.id, 'penalty', { name: '可重复惩罚', mode: 'normal', points: 2, levels: [], repeat: true });
+  S.recordTask(cat.id, 'penalty', pen.id, S.todayStr());
+  S.recordTask(cat.id, 'penalty', pen.id, S.todayStr());
+  const html2 = viewCheck({ name: 'check', date: S.todayStr(), weekOffset: 0, seg: 'penalty', chartDays: 7 });
+  assert.ok(html2.includes('-4'), '惩罚分类汇总应为 -4');
 });

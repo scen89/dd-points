@@ -328,3 +328,21 @@ test('可重复任务同日多次记分，非重复仍去重', () => {
   assert.equal(S.latestTaskRecord(state.ledger, rep.id, '2026-09-14'), null);
   assert.equal(validateState(state).ok, true);
 });
+
+test('撤销最近一次只移除一条，旧数据缺 repeat 仍去重', () => {
+  const { state } = freshState();
+  const cat = state.categories[0];
+  const rep = S.addTask(cat.id, 'reward', { name: '可重复', mode: 'normal', points: 2, levels: [], repeat: true });
+  S.recordTask(cat.id, 'reward', rep.id, '2026-09-15');
+  S.recordTask(cat.id, 'reward', rep.id, '2026-09-15');
+  const latest = S.latestTaskRecord(state.ledger, rep.id, '2026-09-15');
+  S.undoRecord(latest.id);
+  const remain = state.ledger.filter(r => r.taskId === rep.id);
+  assert.equal(remain.length, 1);
+  assert.notEqual(remain[0].id, latest.id);
+
+  const legacy = state.categories[0].rewards.find(t => t.mode === 'normal' && t.id !== rep.id);
+  delete legacy.repeat;
+  assert.equal(S.recordTask(cat.id, 'reward', legacy.id, '2026-09-16').ok, true);
+  assert.equal(S.recordTask(cat.id, 'reward', legacy.id, '2026-09-16').ok, false);
+});

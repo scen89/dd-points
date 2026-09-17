@@ -199,7 +199,8 @@ export function recordTask(catId, kind, taskId, date, levelIdx = null) {
 export function latestTaskRecord(ledger, taskId, date) {
   let found = null;
   for (const r of ledger) {
-    if (r.source === 'task' && r.taskId === taskId && r.date === date) found = r;
+    if (r.source !== 'task' || r.taskId !== taskId || r.date !== date) continue;
+    if (!found || r.ts >= found.ts) found = r;
   }
   return found;
 }
@@ -272,7 +273,13 @@ export function updateTask(catId, kind, taskId, data) {
   if (!task) return { ok: false, error: '任务不存在' };
   const err = validTaskData(data);
   if (err) return { ok: false, error: err };
-  Object.assign(task, { name: data.name, mode: data.mode, points: data.points, levels: data.levels || [], repeat: data.repeat === true });
+  Object.assign(task, {
+    name: data.name,
+    mode: data.mode,
+    points: data.points,
+    levels: data.levels || [],
+    repeat: data.repeat === undefined ? task.repeat === true : data.repeat === true
+  });
   return { ok: true, saved: persist().ok };
 }
 
