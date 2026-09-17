@@ -189,7 +189,7 @@ export function validateState(s) {
   if (!Array.isArray(s.ledger)) return { ok: false, error: '缺少 ledger' };
   for (const r of s.ledger) {
     if (!isPlainObject(r)) return { ok: false, error: '流水不是对象' };
-    if (!hasOnlyKeys(r, ['id', 'type', 'points', 'source', 'taskId', 'title', 'category', 'date', 'ts'])) {
+    if (!hasOnlyKeys(r, ['id', 'type', 'points', 'source', 'taskId', 'title', 'category', 'date', 'ts', 'count'])) {
       return { ok: false, error: '流水包含未知字段' };
     }
     if (typeof r.id !== 'string' || !ID_RE.test(r.id)) return { ok: false, error: '流水 id 非法' };
@@ -198,6 +198,9 @@ export function validateState(s) {
     if (r.source !== 'task' && r.source !== 'exchange') return { ok: false, error: '流水 source 非法' };
     if (r.taskId !== undefined && (typeof r.taskId !== 'string' || !ID_RE.test(r.taskId))) {
       return { ok: false, error: '流水 taskId 非法' };
+    }
+    if (r.count !== undefined && (!Number.isInteger(r.count) || r.count < 1 || r.count > 999)) {
+      return { ok: false, error: '流水数量非法' };
     }
     if (typeof r.title !== 'string' || !r.title) return { ok: false, error: '流水缺少标题' };
     if (r.category !== undefined && typeof r.category !== 'string') {

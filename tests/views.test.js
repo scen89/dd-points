@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as S from '../js/state.js';
 import { viewCheck } from '../js/views/check.js';
-import { viewShop } from '../js/views/shop.js';
+import { viewShop, exchangeLogHtml } from '../js/views/shop.js';
 import { viewLedger } from '../js/views/ledger.js';
 import { viewMe } from '../js/views/me.js';
 import { viewManage } from '../js/views/manage.js';
@@ -64,4 +64,24 @@ test('可重复任务渲染计数与撤销按钮', () => {
   S.recordTask(cat.id, 'penalty', pen.id, S.todayStr());
   const html2 = viewCheck({ name: 'check', date: S.todayStr(), weekOffset: 0, seg: 'penalty', chartDays: 7 });
   assert.ok(html2.includes('-4'), '惩罚分类汇总应为 -4');
+});
+
+test('兑换记录列表渲染与空态', () => {
+  S.init(memStorage());
+  const state = S.getState();
+  assert.ok(exchangeLogHtml(state).includes('还没有兑换记录'));
+
+  state.ledger.push({
+    id: 'x1', type: 'out', points: 6, source: 'exchange', count: 2,
+    title: '兑换 · 测试零食 ×2', category: '商城', date: S.todayStr(), ts: 2
+  });
+  state.ledger.push({
+    id: 'x2', type: 'out', points: 3, source: 'exchange',
+    title: '兑换 · 另一件', category: '商城', date: S.todayStr(), ts: 3
+  });
+  const html = exchangeLogHtml(state);
+  assert.ok(html.includes('共兑换 3 次'));
+  assert.ok(html.includes('累计消耗 9 分'));
+  assert.ok(html.includes('兑换 · 测试零食 ×2'));
+  assert.ok(html.indexOf('另一件') < html.indexOf('测试零食'));
 });

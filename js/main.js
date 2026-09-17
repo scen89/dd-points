@@ -8,7 +8,7 @@ import {
 } from './state.js';
 import { esc, toast, vibrate, download, fmtPts } from './util.js';
 import { viewCheck } from './views/check.js';
-import { viewShop } from './views/shop.js';
+import { viewShop, exchangeLogHtml } from './views/shop.js';
 import { viewLedger } from './views/ledger.js';
 import { viewMe } from './views/me.js';
 import { viewManage } from './views/manage.js';
@@ -49,6 +49,37 @@ function openModal(html) {
   const m = document.getElementById('modal');
   m.innerHTML = `<div class="mask" data-act="close"></div><div class="sheet">${html}</div>`;
   m.classList.add('show');
+}
+
+function setSheet(html) {
+  const m = document.getElementById('modal');
+  const sheet = m.querySelector('.sheet');
+  if (!sheet) { openModal(html); return; }
+  sheet.innerHTML = html;
+}
+
+function exchangeSheet(g, qty) {
+  const bal = balance(getState().ledger);
+  const maxQty = Math.max(1, Math.floor((bal + 1e-9) / g.points));
+  const q = Math.min(Math.max(1, qty), maxQty);
+  const total = fmtPts(g.points * q);
+  setSheet(`
+    <div class="sheet-head">兑换确认</div>
+    <div class="confirm-body" style="padding-top:4px">
+      ${esc(g.emoji) || '🎁'} ${esc(g.name)}<br>
+      <span style="font-size:13px;color:#9AA0A6">单价 ${fmtPts(g.points)} 分 · 最多可兑 ${maxQty} 个</span>
+    </div>
+    <div class="qty-row">
+      <button class="qty-btn" data-act="ex-qty" data-id="${g.id}" data-d="-1" ${q <= 1 ? 'disabled' : ''}>−</button>
+      <span class="qty-num">${q}</span>
+      <button class="qty-btn" data-act="ex-qty" data-id="${g.id}" data-d="1" ${q >= maxQty ? 'disabled' : ''}>＋</button>
+    </div>
+    <div class="qty-sum">合计 <b>${total}</b> 分 · 兑换后余额 <b>${fmtPts(bal - total)}</b> 分</div>
+    <div class="sheet-foot">
+      <button class="btn ghost" data-act="close">取消</button>
+      <button class="btn primary" data-act="ex-ok" data-id="${g.id}" data-qty="${q}">确认兑换</button>
+    </div>
+  `);
 }
 
 function closeModal() {
@@ -493,20 +524,33 @@ document.addEventListener('click', function (e) {
     if (!g) return;
     const bal = balance(getState().ledger);
     if (bal < g.points) return toast('积分不足');
+    exchangeSheet(g, 1);
+    return;
+  }
 
-    confirmModal(
-      '兑换确认',
-      `用 <b style="color:#FF8A3D;font-size:17px">${fmtPts(g.points)}</b> 分兑换「${esc(g.name)}」？<br>
-       兑换后余额 <b>${fmtPts(bal - g.points)}</b> 分<br>
-       <span style="font-size:12px;color:#9AA0A6">需家长确认</span>`,
-      function () {
-        const res = exchange(g.id);
-        if (!res.ok) { toast(res.error); return; }
-        render();
-        toast(res.saved === false ? '兑换成功，但本机保存失败' : '兑换成功 🎉');
-      },
-      { okText: '确认兑换' }
-    );
+  if (act === 'exchange-log') {
+    openModal(exchangeLogHtml(getState()));
+    return;
+  }
+
+  if (act === 'ex-qty') {
+    const g = getState().goods.find(x => x.id === el.dataset.id);
+    if (!g) return;
+    const numEl = document.querySelector('.qty-num');
+    const cur = numEl ? (parseInt(numEl.textContent, 10) || 1) : 1;
+    exchangeSheet(g, cur + (parseInt(el.dataset.d, 10) || 0));
+    return;
+  }
+
+  if (act === 'ex-ok') {
+    const g = getState().goods.find(x => x.id === el.dataset.id);
+    if (!g) return;
+    const qty = Math.max(1, Math.min(999, parseInt(el.dataset.qty, 10) || 1));
+    const res = exchange(g.id, qty);
+    if (!res.ok) { toast(res.error); return; }
+    closeModal();
+    render();
+    toast(res.saved === false ? '兑换成功，但本机保存失败' : '兑换成功 🎉');
     return;
   }
 

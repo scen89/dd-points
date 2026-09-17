@@ -234,3 +234,12 @@ input,select,textarea{font-family:inherit;font-size:16px;}
 .task .tcount{font-size:12px;font-weight:600;color:var(--green);background:var(--green-l);border-radius:8px;padding:2px 6px;flex-shrink:0;font-variant-numeric:tabular-nums;}
 .tbtn.undo{background:#EFF1F4;color:var(--t2);font-size:16px;}
 .m-name .rep-tag{font-size:11px;color:var(--green);background:var(--green-l);border-radius:6px;padding:1px 5px;margin-left:6px;}
+
+/* ===== 兑换数量与记录 ===== */
+.qty-row{display:flex;align-items:center;justify-content:center;gap:18px;padding:14px 0 6px;}
+.qty-btn{width:44px;height:44px;border-radius:50%;background:#EFF1F4;color:var(--t1);font-size:22px;font-weight:600;display:flex;align-items:center;justify-content:center;}
+.qty-btn:disabled{opacity:.35;}
+.qty-num{min-width:52px;text-align:center;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums;}
+.qty-sum{text-align:center;font-size:14px;color:var(--t2);padding-bottom:6px;font-variant-numeric:tabular-nums;}
+.qty-sum b{color:var(--orange);}
+.log-sum{font-size:13px;color:var(--t2);padding:2px 0 12px;text-align:center;font-variant-numeric:tabular-nums;}

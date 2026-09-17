@@ -1,4 +1,4 @@
-import { getState, balance } from '../state.js';
+import { getState, balance, fmtDate } from '../state.js';
 import { esc, fmtPts } from '../util.js';
 
 export function viewShop() {
@@ -7,6 +7,7 @@ export function viewShop() {
   let h = `
   <div class="topbar">
     <h1>积分商城</h1>
+    <button class="icon-btn" data-act="exchange-log" title="兑换记录">📋</button>
     <button class="icon-btn" data-act="go" data-page="manageGoods" title="商品管理">⚙️</button>
   </div>
   <div class="page">
@@ -33,4 +34,28 @@ export function viewShop() {
   }
   h += `</div></div>`;
   return h;
+}
+
+export function exchangeLogHtml(state) {
+  const recs = state.ledger
+    .filter(r => r.source === 'exchange')
+    .slice()
+    .sort((a, b) => b.ts - a.ts);
+  const totalCount = recs.reduce((s, r) => s + (r.count || 1), 0);
+  const totalSpend = recs.reduce((s, r) => s + r.points, 0);
+  let rows = '';
+  recs.forEach(r => {
+    rows += `<div class="led-row">
+      <div class="led-title">${esc(r.title)}<span style="color:#9AA0A6;font-size:12px"> · ${fmtDate(r.date)}</span></div>
+      <div class="led-pts minus">-${fmtPts(r.points)}</div>
+    </div>`;
+  });
+  return `
+    <div class="sheet-head">兑换记录</div>
+    <div class="log-sum">共兑换 ${totalCount} 次 · 累计消耗 ${fmtPts(totalSpend)} 分</div>
+    <div class="card" style="margin-bottom:0">${rows || '<div class="empty">还没有兑换记录</div>'}</div>
+    <div class="sheet-foot">
+      <button class="btn ghost" data-act="close">关闭</button>
+    </div>
+  `;
 }

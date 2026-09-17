@@ -346,3 +346,27 @@ test('撤销最近一次只移除一条，旧数据缺 repeat 仍去重', () => 
   assert.equal(S.recordTask(cat.id, 'reward', legacy.id, '2026-09-16').ok, true);
   assert.equal(S.recordTask(cat.id, 'reward', legacy.id, '2026-09-16').ok, false);
 });
+
+test('exchange 支持数量：合计、标题与限制', () => {
+  const { state } = freshState();
+  const g = state.goods[0];
+  state.ledger.push({ id: 'in1', type: 'in', points: 10000, source: 'task', title: '灌分', date: '2026-09-15', ts: 1 });
+  const res = S.exchange(g.id, 2);
+  assert.equal(res.ok, true);
+  const rec = state.ledger[state.ledger.length - 1];
+  assert.equal(rec.count, 2);
+  assert.equal(rec.points, g.points * 2);
+  assert.ok(rec.title.includes('×2'));
+  assert.equal(S.balance(state.ledger), 10000 - g.points * 2);
+
+  assert.equal(S.exchange(g.id, 0).ok, false);
+  assert.equal(S.exchange(g.id, -1).ok, false);
+  assert.equal(S.exchange(g.id, 1.5).ok, false);
+
+  const big = state.goods.find(x => x.points > 10);
+  const balNow = S.balance(state.ledger);
+  const tooMany = Math.floor(balNow / big.points) + 1;
+  assert.ok(tooMany <= 999);
+  assert.equal(S.exchange(big.id, tooMany).ok, false);
+  assert.equal(validateState(state).ok, true);
+});

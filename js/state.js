@@ -213,18 +213,23 @@ export function undoRecord(entryId) {
   return { ok: true, saved: persist().ok };
 }
 
-export function exchange(goodsId) {
+export function exchange(goodsId, count = 1) {
+  if (!Number.isInteger(count) || count < 1 || count > 999) {
+    return { ok: false, error: '兑换数量非法' };
+  }
   const s = getState();
   const g = s.goods.find(x => x.id === goodsId);
   if (!g) return { ok: false, error: '商品不存在' };
+  const total = Math.round(g.points * count * 100) / 100;
   const bal = balance(s.ledger);
-  if (bal < g.points) return { ok: false, error: '积分不足' };
+  if (bal < total) return { ok: false, error: '积分不足' };
   s.ledger.push({
     id: uid(),
     type: 'out',
-    points: g.points,
+    points: total,
+    count,
     source: 'exchange',
-    title: '兑换 · ' + g.name,
+    title: '兑换 · ' + g.name + (count > 1 ? ' ×' + count : ''),
     category: '商城',
     date: todayStr(),
     ts: Date.now()

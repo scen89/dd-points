@@ -161,3 +161,18 @@ test('种子任务含 repeat 字段且校验兼容缺省 repeat', () => {
   s.categories[0].rewards[0].repeat = 'yes';
   assert.equal(validateState(s).ok, false);
 });
+
+test('validateState 校验流水数量字段', () => {
+  const make = (count) => {
+    const s = createSeedState();
+    const rec = { id: 'e1', type: 'out', points: 4, source: 'exchange', title: '兑换 · 测试', date: '2026-09-15', ts: 1 };
+    if (count !== undefined) rec.count = count;
+    s.ledger.push(rec);
+    return s;
+  };
+  assert.equal(validateState(make()).ok, true);
+  assert.equal(validateState(make(2)).ok, true);
+  assert.equal(validateState(make(1.5)).ok, false);
+  assert.equal(validateState(make(0)).ok, false);
+  assert.equal(validateState(make(1000)).ok, false);
+});
