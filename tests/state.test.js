@@ -374,6 +374,7 @@ test('exchange 支持数量：合计、标题与限制', () => {
 test('商品积分下限、兑换数量上限与小数合计', () => {
   const { state } = freshState();
   assert.equal(S.addGoods({ name: '微量商品', points: 0.004, emoji: '🎁' }).ok, false);
+  assert.equal(S.addGoods({ name: '三位小数', points: 0.014, emoji: '🎁' }).ok, false);
 
   assert.equal(S.maxExchangeCount(100, 0), 0);
   assert.equal(S.maxExchangeCount(100, 3), 33);

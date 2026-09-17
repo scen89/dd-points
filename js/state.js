@@ -159,6 +159,7 @@ function validGoodsData(data) {
   if (typeof data.name !== 'string' || !data.name.trim()) return '商品名称不能为空';
   if (!Number.isFinite(data.points) || !(data.points > 0)) return '商品积分必须为正数';
   if (data.points < 0.01) return '商品积分至少为 0.01';
+  if (round2(data.points) !== data.points) return '商品积分最多两位小数';
   if (typeof data.emoji !== 'string' || data.emoji.length > 16 || /[&<>"']/.test(data.emoji)) return '商品图标非法';
   return null;
 }
