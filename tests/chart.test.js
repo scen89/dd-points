@@ -48,3 +48,13 @@ test('标签被转义', () => {
   assert.ok(!svg.includes('<img'));
   assert.ok(svg.includes('&lt;img'));
 });
+
+test('相邻两天的柱组之间有间隔（组内更近）', () => {
+  const items = Array.from({ length: 7 }, (_, i) => ({ label: '9/' + (i + 1), reward: 1, penalty: 1 }));
+  const svg = dualBarChartSVG(items, OPTS);
+  const rects = [...svg.matchAll(/<rect x="([\d.]+)" y="[^"]*" width="([\d.]+)"/g)].map(m => ({ x: Number(m[1]), w: Number(m[2]) }));
+  assert.equal(rects.length, 14);
+  const intra = rects[1].x - (rects[0].x + rects[0].w);
+  const inter = rects[2].x - (rects[1].x + rects[1].w);
+  assert.ok(inter > intra, `组间距 ${inter} 应大于组内间距 ${intra}`);
+});

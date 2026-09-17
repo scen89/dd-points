@@ -77,18 +77,23 @@ export function netSum(ledger, dates) {
   }, 0);
 }
 
+export function taskSplit(records) {
+  let reward = 0;
+  let penalty = 0;
+  records.forEach(r => {
+    if (r.source !== 'task') return;
+    if (r.type === 'in') reward += r.points;
+    else penalty += r.points;
+  });
+  return { reward, penalty };
+}
+
 export function chartSeries(ledger, days, now = new Date()) {
   const out = [];
   for (let i = days - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
     const date = ds(d);
-    let reward = 0;
-    let penalty = 0;
-    ledger.forEach(r => {
-      if (r.date !== date || r.source !== 'task') return;
-      if (r.type === 'in') reward += r.points;
-      else penalty += r.points;
-    });
+    const { reward, penalty } = taskSplit(ledger.filter(r => r.date === date));
     out.push({ date, label: (d.getMonth() + 1) + '/' + d.getDate(), reward, penalty, net: reward - penalty });
   }
   return out;

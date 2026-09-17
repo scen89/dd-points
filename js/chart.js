@@ -10,10 +10,10 @@ export function dualBarChartSVG(items, opts = {}) {
   const labelH = 18;
   const plotH = height - labelH;
   const base = plotH / 2;
-  const maxAbs = Math.max(1, ...items.map(d => Math.max(d.reward || 0, d.penalty || 0)));
+  const maxAbs = Math.max(0.01, ...items.map(d => Math.max(d.reward || 0, d.penalty || 0)));
   const scale = (base - 8) / maxAbs;
   const slot = width / items.length;
-  const bw = Math.max(1.5, Math.min(24, (slot - gap) / 2));
+  const bw = Math.max(1.5, Math.min(24, (slot - gap * 3) / 2));
   const labelEvery = items.length <= 10 ? 1 : 5;
 
   let bars = '';

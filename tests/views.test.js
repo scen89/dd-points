@@ -106,4 +106,7 @@ test('明细页显示奖惩双柱、拆分与占比', () => {
   assert.ok(html.includes('惩罚 <b class="minus">-' + pn.points + '</b>'));
   assert.ok(html.includes('近7天'));
   assert.ok(html.includes('%'));
+  assert.ok(html.includes('任务净'));
+  assert.ok(html.includes('仅统计打卡，不含兑换'));
+  assert.ok(html.includes('（50%）'), '等额奖惩应显示 50%');
 });

@@ -1,4 +1,4 @@
-import { getState, balance, groupByDate, fmtDate, chartSeries } from '../state.js';
+import { getState, balance, groupByDate, fmtDate, chartSeries, taskSplit } from '../state.js';
 import { dualBarChartSVG } from '../chart.js';
 import { esc, fmtPts } from '../util.js';
 
@@ -33,6 +33,7 @@ export function viewLedger(route) {
       <div class="chart-legend">
         <span><i class="lg-dot reward"></i>奖励</span>
         <span><i class="lg-dot penalty"></i>惩罚</span>
+        <span class="lg-note">仅统计打卡，不含兑换</span>
       </div>
       <div class="chart-sum">近${days}天：奖励 ${fmtPts(rewardSum)} 分（${rewardPct}%）· 惩罚 ${fmtPts(penaltySum)} 分（${penaltyPct}%）</div>
     </div>`;
@@ -43,18 +44,12 @@ export function viewLedger(route) {
 
   dates.forEach(d => {
     const recs = byDate[d];
-    let reward = 0;
-    let penalty = 0;
-    recs.forEach(r => {
-      if (r.source !== 'task') return;
-      if (r.type === 'in') reward += r.points;
-      else penalty += r.points;
-    });
+    const { reward, penalty } = taskSplit(recs);
     const dayNet = reward - penalty;
     h += `<div class="day-group">
       <div class="day-head">
         <span>${fmtDate(d)}</span>
-        <span class="day-split">奖励 <b class="plus">${reward > 0 ? '+' + fmtPts(reward) : '0'}</b> · 惩罚 <b class="minus">${penalty > 0 ? '-' + fmtPts(penalty) : '0'}</b> · 净 <b class="${dayNet > 0 ? 'plus' : dayNet < 0 ? 'minus' : ''}">${dayNet > 0 ? '+' : ''}${fmtPts(dayNet)}</b></span>
+        <span class="day-split">奖励 <b class="plus">${reward > 0 ? '+' + fmtPts(reward) : '0'}</b> · 惩罚 <b class="minus">${penalty > 0 ? '-' + fmtPts(penalty) : '0'}</b> · 任务净 <b class="${dayNet > 0 ? 'plus' : dayNet < 0 ? 'minus' : ''}">${dayNet > 0 ? '+' : ''}${fmtPts(dayNet)}</b></span>
       </div>
       <div class="card">`;
     recs.forEach(r => {

@@ -403,3 +403,14 @@ test('商品积分下限、兑换数量上限与小数合计', () => {
   assert.equal(rec.count, 3);
   assert.equal(validateState(state).ok, true);
 });
+
+test('taskSplit 只统计打卡流水', () => {
+  const records = [
+    { id: 'a', type: 'in', points: 4, source: 'task', title: 't', date: '2026-09-15', ts: 1 },
+    { id: 'b', type: 'out', points: 2, source: 'task', title: 't', date: '2026-09-15', ts: 2 },
+    { id: 'c', type: 'out', points: 9, source: 'exchange', title: '兑换', date: '2026-09-15', ts: 3 }
+  ];
+  const { reward, penalty } = S.taskSplit(records);
+  assert.equal(reward, 4);
+  assert.equal(penalty, 2);
+});
