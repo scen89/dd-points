@@ -2389,3 +2389,8 @@ git push -u origin main
 - `maxExchangeCount(bal, price)` 纯函数统一步进器上限（≤ 999），`exchange(goodsId, count)` 以 `round2` 合计并校验
 - 兑换记录渲染为 shop.js 纯函数 `exchangeLogHtml(state)`，便于单测
 - 商品积分最低 0.01、最多两位小数（写入侧与导入校验同时约束）
+
+### 功能增强：明细趋势图奖惩双柱（提交 2debb40、b49a4d7）
+- 详见设计文档「功能增强：明细趋势图奖惩分开展示」
+- `dualBarChartSVG` 替换原 `barChartSVG`；`chartSeries` 返回 `{date,label,reward,penalty,net}`（仅打卡口径）
+- 抽取 `taskSplit(records)` 统一图/日汇总口径；每日标题「任务净」，图例标注「仅统计打卡，不含兑换」
