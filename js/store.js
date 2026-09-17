@@ -182,6 +182,7 @@ export function validateState(s) {
       return { ok: false, error: '商品字段缺失或非法' };
     }
     if (!Number.isFinite(g.points) || !(g.points > 0)) return { ok: false, error: '商品分值必须为正数' };
+    if (g.points < 0.01) return { ok: false, error: '商品积分至少为 0.01' };
     if (typeof g.emoji !== 'string' || g.emoji.length > 16 || /[&<>"']/.test(g.emoji)) {
       return { ok: false, error: '商品图标非法' };
     }

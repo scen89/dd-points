@@ -35,6 +35,7 @@ test('六个视图对恶意数据不崩溃且转义', () => {
     viewCheck(route),
     viewCheck({ ...route, seg: 'penalty' }),
     viewShop(route),
+    exchangeLogHtml(state),
     viewLedger(route),
     viewMe(route),
     viewManage(route),
@@ -79,9 +80,14 @@ test('兑换记录列表渲染与空态', () => {
     id: 'x2', type: 'out', points: 3, source: 'exchange',
     title: '兑换 · 另一件', category: '商城', date: S.todayStr(), ts: 3
   });
+  state.ledger.push({
+    id: 't9', type: 'in', points: 5, source: 'task', taskId: 'abc123', title: '测试任务记录',
+    category: '测试', date: S.todayStr(), ts: 4
+  });
   const html = exchangeLogHtml(state);
-  assert.ok(html.includes('共兑换 3 次'));
+  assert.ok(html.includes('共兑换 3 件'));
   assert.ok(html.includes('累计消耗 9 分'));
   assert.ok(html.includes('兑换 · 测试零食 ×2'));
   assert.ok(html.indexOf('另一件') < html.indexOf('测试零食'));
+  assert.ok(!html.includes('测试任务记录'), '兑换记录不应包含打卡流水');
 });

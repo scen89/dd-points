@@ -158,6 +158,7 @@ function validGoodsData(data) {
   if (!hasOnlyKeys(data, ['name', 'points', 'emoji'])) return '商品包含未知字段';
   if (typeof data.name !== 'string' || !data.name.trim()) return '商品名称不能为空';
   if (!Number.isFinite(data.points) || !(data.points > 0)) return '商品积分必须为正数';
+  if (data.points < 0.01) return '商品积分至少为 0.01';
   if (typeof data.emoji !== 'string' || data.emoji.length > 16 || /[&<>"']/.test(data.emoji)) return '商品图标非法';
   return null;
 }
@@ -213,6 +214,15 @@ export function undoRecord(entryId) {
   return { ok: true, saved: persist().ok };
 }
 
+function round2(n) {
+  return Math.round(n * 100) / 100;
+}
+
+export function maxExchangeCount(bal, price) {
+  if (!(price > 0)) return 0;
+  return Math.min(999, Math.max(0, Math.floor(round2(bal) / round2(price))));
+}
+
 export function exchange(goodsId, count = 1) {
   if (!Number.isInteger(count) || count < 1 || count > 999) {
     return { ok: false, error: '兑换数量非法' };
@@ -220,8 +230,8 @@ export function exchange(goodsId, count = 1) {
   const s = getState();
   const g = s.goods.find(x => x.id === goodsId);
   if (!g) return { ok: false, error: '商品不存在' };
-  const total = Math.round(g.points * count * 100) / 100;
-  const bal = balance(s.ledger);
+  const total = round2(g.points * count);
+  const bal = round2(balance(s.ledger));
   if (bal < total) return { ok: false, error: '积分不足' };
   s.ledger.push({
     id: uid(),

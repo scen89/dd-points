@@ -1,5 +1,5 @@
 import {
-  init, getState, recordTask, undoRecord, latestTaskRecord, exchange, balance,
+  init, getState, recordTask, undoRecord, latestTaskRecord, exchange, balance, maxExchangeCount,
   addCategory, renameCategory, removeCategory,
   addTask, updateTask, removeTask,
   addGoods, updateGoods, removeGoods,
@@ -60,7 +60,7 @@ function setSheet(html) {
 
 function exchangeSheet(g, qty) {
   const bal = balance(getState().ledger);
-  const maxQty = Math.max(1, Math.floor((bal + 1e-9) / g.points));
+  const maxQty = Math.max(1, maxExchangeCount(bal, g.points));
   const q = Math.min(Math.max(1, qty), maxQty);
   const total = fmtPts(g.points * q);
   setSheet(`
@@ -523,7 +523,7 @@ document.addEventListener('click', function (e) {
     const g = getState().goods.find(x => x.id === el.dataset.id);
     if (!g) return;
     const bal = balance(getState().ledger);
-    if (bal < g.points) return toast('积分不足');
+    if (fmtPts(bal) < fmtPts(g.points)) return toast('积分不足');
     exchangeSheet(g, 1);
     return;
   }
@@ -534,15 +534,17 @@ document.addEventListener('click', function (e) {
   }
 
   if (act === 'ex-qty') {
+    if (!document.getElementById('modal').classList.contains('show')) return;
     const g = getState().goods.find(x => x.id === el.dataset.id);
     if (!g) return;
-    const numEl = document.querySelector('.qty-num');
+    const numEl = document.querySelector('#modal .qty-num');
     const cur = numEl ? (parseInt(numEl.textContent, 10) || 1) : 1;
     exchangeSheet(g, cur + (parseInt(el.dataset.d, 10) || 0));
     return;
   }
 
   if (act === 'ex-ok') {
+    if (!document.getElementById('modal').classList.contains('show')) return;
     const g = getState().goods.find(x => x.id === el.dataset.id);
     if (!g) return;
     const qty = Math.max(1, Math.min(999, parseInt(el.dataset.qty, 10) || 1));

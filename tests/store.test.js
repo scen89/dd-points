@@ -176,3 +176,9 @@ test('validateState 校验流水数量字段', () => {
   assert.equal(validateState(make(0)).ok, false);
   assert.equal(validateState(make(1000)).ok, false);
 });
+
+test('validateState 拒绝低于 0.01 的商品积分', () => {
+  const s = createSeedState();
+  s.goods[0].points = 0.004;
+  assert.equal(validateState(s).ok, false);
+});

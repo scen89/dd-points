@@ -52,7 +52,7 @@ export function exchangeLogHtml(state) {
   });
   return `
     <div class="sheet-head">兑换记录</div>
-    <div class="log-sum">共兑换 ${totalCount} 次 · 累计消耗 ${fmtPts(totalSpend)} 分</div>
+    <div class="log-sum">共兑换 ${totalCount} 件 · 累计消耗 ${fmtPts(totalSpend)} 分</div>
     <div class="card" style="margin-bottom:0">${rows || '<div class="empty">还没有兑换记录</div>'}</div>
     <div class="sheet-foot">
       <button class="btn ghost" data-act="close">关闭</button>

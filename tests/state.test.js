@@ -370,3 +370,26 @@ test('exchange 支持数量：合计、标题与限制', () => {
   assert.equal(S.exchange(big.id, tooMany).ok, false);
   assert.equal(validateState(state).ok, true);
 });
+
+test('商品积分下限、兑换数量上限与小数合计', () => {
+  const { state } = freshState();
+  assert.equal(S.addGoods({ name: '微量商品', points: 0.004, emoji: '🎁' }).ok, false);
+
+  assert.equal(S.maxExchangeCount(100, 0), 0);
+  assert.equal(S.maxExchangeCount(100, 3), 33);
+  assert.equal(S.maxExchangeCount(0.7999999999999999, 0.4), 2);
+  assert.equal(S.maxExchangeCount(100000, 0.01), 999);
+
+  const g = state.goods[0];
+  state.ledger.push({ id: 'in9', type: 'in', points: 10000, source: 'task', title: '灌分', date: '2026-09-15', ts: 9 });
+  assert.equal(S.exchange(g.id, 1000).ok, false);
+
+  const cheap = S.addGoods({ name: '一角商品', points: 0.1, emoji: '🎈' });
+  assert.equal(cheap.ok, true);
+  const res = S.exchange(cheap.id, 3);
+  assert.equal(res.ok, true);
+  const rec = state.ledger[state.ledger.length - 1];
+  assert.equal(rec.points, 0.3);
+  assert.equal(rec.count, 3);
+  assert.equal(validateState(state).ok, true);
+});
